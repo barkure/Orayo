@@ -118,6 +118,16 @@ jobs:
             --runtime $env:RUNTIME_ID `
             --icon Assets/AppIcon.ico `
             --outputDir artifacts/velopack
+
+          $portablePath = "artifacts/velopack/Orayo-win-Portable.zip"
+          $setupPath = "artifacts/velopack/Orayo-win-Setup.exe"
+          if (Test-Path $portablePath) {
+            Move-Item $portablePath "artifacts/velopack/Orayo-$version-Portable.zip" -Force
+          }
+          if (Test-Path $setupPath) {
+            Move-Item $setupPath "artifacts/velopack/Orayo-$version-Setup.exe" -Force
+          }
+
           vpk upload github `
             --repoUrl $repoUrl `
             --token "${{ secrets.GITHUB_TOKEN }}" `
