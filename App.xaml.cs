@@ -3,6 +3,7 @@ using System;
 using System.Drawing;
 using Forms = System.Windows.Forms;
 using Orayo.Services;
+using Velopack;
 
 namespace Orayo;
 
@@ -13,6 +14,7 @@ public partial class App : Application
 
     public App()
     {
+        VelopackApp.Build().Run();
         InitializeComponent();
     }
 

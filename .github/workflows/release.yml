@@ -44,8 +44,14 @@ jobs:
           }
 
           $numericVersion = $version.TrimStart('v')
-          $assemblyVersion = if (($numericVersion -split '\.').Count -eq 3) {
+          $versionParts = $numericVersion -split '\.'
+          $assemblyVersion = if ($versionParts.Count -eq 3) {
             "$numericVersion.0"
+          } else {
+            $numericVersion
+          }
+          $velopackVersion = if ($versionParts.Count -eq 4) {
+            "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])-r$($versionParts[3])"
           } else {
             $numericVersion
           }
@@ -53,6 +59,7 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           "numeric_version=$numericVersion" >> $env:GITHUB_OUTPUT
           "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
+          "velopack_version=$velopackVersion" >> $env:GITHUB_OUTPUT
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -93,60 +100,37 @@ jobs:
             -p:FileVersion=${{ steps.version.outputs.assembly_version }} `
             -o artifacts/publish
 
-      - name: Package portable zip
-        id: package
+      - name: Create Velopack release
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          $zipName = "Orayo-$version-portable.zip"
-          $zipPath = Join-Path "artifacts" $zipName
+          $packVersion = "${{ steps.version.outputs.velopack_version }}"
+          $repoUrl = "https://github.com/${{ github.repository }}"
 
-          Compress-Archive -Path "artifacts/publish/*" -DestinationPath $zipPath -Force
-
-          "zip_name=$zipName" >> $env:GITHUB_OUTPUT
-          "zip_path=$zipPath" >> $env:GITHUB_OUTPUT
-
-      - name: Install Inno Setup
-        run: choco install innosetup --no-progress --yes
-
-      - name: Build installer
-        id: installer
-        shell: pwsh
-        run: |
-          $version = "${{ steps.version.outputs.version }}"
-          $numericVersion = "${{ steps.version.outputs.numeric_version }}"
-          $setupBaseName = "Orayo-$version-setup"
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-
-          & $iscc "build/installer/Orayo.iss" `
-            "/DAppVersion=$numericVersion" `
-            "/DOutputBaseFilename=$setupBaseName" `
-            "/DOutputDir=..\..\artifacts"
-
-          $setupPath = Join-Path "artifacts" "$setupBaseName.exe"
-          if (-not (Test-Path $setupPath)) {
-            throw "Installer was not generated: $setupPath"
-          }
-
-          "setup_name=$setupBaseName.exe" >> $env:GITHUB_OUTPUT
-          "setup_path=$setupPath" >> $env:GITHUB_OUTPUT
+          dotnet tool install -g vpk --version 0.0.1298
+          vpk download github --repoUrl $repoUrl --token "${{ secrets.GITHUB_TOKEN }}" --outputDir artifacts/velopack
+          vpk pack `
+            --packId Orayo `
+            --packTitle Orayo `
+            --packAuthors barkure `
+            --packVersion $packVersion `
+            --packDir artifacts/publish `
+            --mainExe Orayo.exe `
+            --runtime $env:RUNTIME_ID `
+            --icon Assets/AppIcon.ico `
+            --outputDir artifacts/velopack
+          vpk upload github `
+            --repoUrl $repoUrl `
+            --token "${{ secrets.GITHUB_TOKEN }}" `
+            --outputDir artifacts/velopack `
+            --publish `
+            --merge `
+            --releaseName "Orayo $version" `
+            --tag $version
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: Orayo-${{ steps.version.outputs.version }}
-          path: |
-            ${{ steps.package.outputs.zip_path }}
-            ${{ steps.installer.outputs.setup_path }}
+          path: artifacts/velopack/*
           if-no-files-found: error
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: Orayo ${{ steps.version.outputs.version }}
-          files: |
-            ${{ steps.package.outputs.zip_path }}
-            ${{ steps.installer.outputs.setup_path }}
-          fail_on_unmatched_files: true
-          generate_release_notes: true
