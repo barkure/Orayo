@@ -20,7 +20,7 @@ public sealed partial class MoreWindow : Window
     private const int GWL_HWNDPARENT = -8;
     private const string UpdateRepositoryUrl = "https://github.com/barkure/Orayo";
     private const int DefaultWidth = 900;
-    private const int DefaultHeight = 810;
+    private const int DefaultHeight = 860;
 
     [DllImport("User32.dll", CharSet = CharSet.Auto, EntryPoint = "SetWindowLongPtr")]
     private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
@@ -75,9 +75,9 @@ public sealed partial class MoreWindow : Window
     private void RefreshAppVersion()
     {
         var manager = CreateUpdateManager();
-        var version = manager.CurrentVersion?.ToString() ?? ThisAssemblyVersion();
-        var mode = manager.IsPortable ? "便携版" : manager.IsInstalled ? "安装版" : "开发版";
-        AppVersionTextBlock.Text = $"当前版本：{version}（{mode}）";
+        var version = FormatDisplayVersion(manager.CurrentVersion?.ToString() ?? ThisAssemblyVersion());
+        var mode = manager.IsPortable ? "Portable" : manager.IsInstalled ? "Installer" : "Development";
+        AppVersionTextBlock.Text = $"当前版本：{version} ({mode})";
     }
 
     private async Task LoadSettingsAsync()
@@ -155,7 +155,7 @@ public sealed partial class MoreWindow : Window
                 return;
             }
 
-            var targetVersion = update.TargetFullRelease.Version.ToString();
+            var targetVersion = FormatDisplayVersion(update.TargetFullRelease.Version.ToString());
             var confirmed = await ConfirmAsync(
                 "发现新版本",
                 $"发现 Orayo {targetVersion}，是否现在下载并重启完成更新？");
@@ -269,7 +269,37 @@ public sealed partial class MoreWindow : Window
 
     private static string ThisAssemblyVersion()
     {
-        return typeof(App).Assembly.GetName().Version?.ToString() ?? "未知";
+        var version = typeof(App).Assembly.GetName().Version;
+        if (version is null)
+        {
+            return "未知";
+        }
+
+        return version.Revision > 0
+            ? $"{version.Major}.{version.Minor}.{version.Build}-r{version.Revision}"
+            : $"{version.Major}.{version.Minor}.{version.Build}";
+    }
+
+    private static string FormatDisplayVersion(string version)
+    {
+        if (string.IsNullOrWhiteSpace(version) || string.Equals(version, "未知", StringComparison.OrdinalIgnoreCase))
+        {
+            return version;
+        }
+
+        var normalized = version.TrimStart('v');
+        if (normalized.Contains("-r", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"v{normalized}";
+        }
+
+        var parts = normalized.Split('.');
+        if (parts.Length == 4 && int.TryParse(parts[3], out var releaseNumber))
+        {
+            normalized = $"{parts[0]}.{parts[1]}.{parts[2]}-r{releaseNumber}";
+        }
+
+        return $"v{normalized}";
     }
 
     private async Task<bool> ConfirmAsync(string title, string message)

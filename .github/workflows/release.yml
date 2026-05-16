@@ -3,12 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"
-      - "v*.*.*.*"
+      - "v*.*.*-r*"
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, for example v26.5.17.1"
+        description: "Release version, for example v26.5.17-r1"
         required: true
         type: string
 
@@ -39,25 +38,17 @@ jobs:
             "${{ github.ref_name }}"
           }
 
-          if ($version -notmatch '^v\d{2}\.\d{1,2}\.\d{1,2}(\.\d+)?$') {
-            throw "Version '$version' is invalid. Use a tag like v26.5.17.1."
+          if ($version -notmatch '^v\d{2}\.\d{1,2}\.\d{1,2}-r\d+$') {
+            throw "Version '$version' is invalid. Use a tag like v26.5.17-r1."
           }
 
-          $numericVersion = $version.TrimStart('v')
-          $versionParts = $numericVersion -split '\.'
-          $assemblyVersion = if ($versionParts.Count -eq 3) {
-            "$numericVersion.0"
-          } else {
-            $numericVersion
-          }
-          $velopackVersion = if ($versionParts.Count -eq 4) {
-            "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])-r$($versionParts[3])"
-          } else {
-            $numericVersion
-          }
+          $velopackVersion = $version.TrimStart('v')
+          $versionParts = $velopackVersion -split '-r'
+          $baseVersion = $versionParts[0]
+          $releaseNumber = $versionParts[1]
+          $assemblyVersion = "$baseVersion.$releaseNumber"
 
           "version=$version" >> $env:GITHUB_OUTPUT
-          "numeric_version=$numericVersion" >> $env:GITHUB_OUTPUT
           "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
           "velopack_version=$velopackVersion" >> $env:GITHUB_OUTPUT
 
@@ -95,7 +86,9 @@ jobs:
             -p:WindowsAppSDKSelfContained=true `
             -p:PublishSingleFile=false `
             -p:PublishReadyToRun=true `
-            -p:Version=${{ steps.version.outputs.assembly_version }} `
+            -p:Version=${{ steps.version.outputs.velopack_version }} `
+            -p:PackageVersion=${{ steps.version.outputs.velopack_version }} `
+            -p:InformationalVersion=${{ steps.version.outputs.velopack_version }} `
             -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} `
             -p:FileVersion=${{ steps.version.outputs.assembly_version }} `
             -o artifacts/publish
