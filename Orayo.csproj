@@ -62,6 +62,16 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
   </PropertyGroup>
+
+  <Target Name="CopyWinUIXamlResourcesToPublishDirectory" AfterTargets="Publish">
+    <ItemGroup>
+      <WinUIXamlPublishResources Include="$(OutputPath)**\*.xbf;$(OutputPath)**\*.pri" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(WinUIXamlPublishResources)"
+      DestinationFiles="@(WinUIXamlPublishResources->'$(PublishDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
 </Project>
 
 

@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using System;
 using System.Drawing;
+using System.IO;
 using Forms = System.Windows.Forms;
 using Orayo.Services;
 using Velopack;
@@ -16,6 +17,22 @@ public partial class App : Application
     {
         VelopackApp.Build().Run();
         InitializeComponent();
+        UnhandledException += App_UnhandledException;
+    }
+
+    private static void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orayo");
+            Directory.CreateDirectory(logDir);
+            File.AppendAllText(
+                Path.Combine(logDir, "crash.log"),
+                $"[{DateTimeOffset.Now:O}] {e.Exception}\r\n\r\n");
+        }
+        catch
+        {
+        }
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)

@@ -137,11 +137,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         InitializeComponent();
         WindowThemeHelper.Apply(this);
-        AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
-        SetTitleBar(TitleBarGrid);
         SetWindowIcon();
-        AppWindow.Resize(new SizeInt32(1300, 815));
-        WindowMinSizeHelper.Apply(this, 1300, 815);
+        AppWindow.Resize(new SizeInt32(1300, 810));
+        WindowMinSizeHelper.Apply(this, 1300, 810);
         AppWindow.Closing += OnAppWindowClosing;
         Closed += OnClosed;
         _xray.RunningChanged += Xray_RunningChanged;
