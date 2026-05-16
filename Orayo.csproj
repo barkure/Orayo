@@ -35,6 +35,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Assets\AppIcon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Assets\AppIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Content Remove="Assets\editor\monaco\**" />
     <None Remove="Assets\editor\monaco\**" />
     <None Include="Assets\editor\monaco\**">
