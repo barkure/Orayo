@@ -10,6 +10,9 @@ Orayo is a modern Windows Xray client built with WinUI 3.
 - Routing and DNS settings
 - Geo data file updates
 
+## ScreenShots
+![](./ScreenShots/image.png)
+
 ## Build
 
 Requires .NET 8 SDK and Windows 10 19041 or later.
