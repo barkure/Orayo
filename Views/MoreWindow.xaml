@@ -87,15 +87,25 @@
         </Border>
 
         <Border Grid.Row="5" Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-            <StackPanel Spacing="8">
-                <TextBlock Text="关于 Orayo" FontWeight="SemiBold" />
-                <TextBlock Text="一个适用于 Windows 的现代化 Xray 客户端" Opacity="0.72" TextWrapping="Wrap" />
-                <HyperlinkButton Content="GitHub - barkure/Orayo"
-                                 NavigateUri="https://github.com/barkure/Orayo"
-                                 Padding="0"
-                                 MinWidth="0"
-                                 HorizontalAlignment="Left" />
-            </StackPanel>
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="关于 Orayo" FontWeight="SemiBold" />
+                    <TextBlock Text="一个适用于 Windows 的现代化 Xray 客户端" Opacity="0.72" TextWrapping="Wrap" />
+                    <TextBlock x:Name="AppVersionTextBlock" Text="当前版本：读取中..." Opacity="0.72" TextWrapping="Wrap" />
+                    <HyperlinkButton Content="GitHub - barkure/Orayo"
+                                     NavigateUri="https://github.com/barkure/Orayo"
+                                     Padding="0"
+                                     MinWidth="0"
+                                     HorizontalAlignment="Left" />
+                </StackPanel>
+
+                <Button x:Name="CheckAppUpdateButton" Grid.Column="1" Content="检查更新" MinWidth="96" Click="CheckAppUpdateButton_Click" />
+            </Grid>
         </Border>
 
         <TextBlock Grid.Row="6" x:Name="StatusTextBlock" VerticalAlignment="Center" Opacity="0.72" TextWrapping="Wrap" />

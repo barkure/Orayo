@@ -1,19 +1,24 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
 using Windows.Graphics;
 using Orayo.Helpers;
 using Orayo.Services;
 using Orayo.Models;
+using Velopack;
+using Velopack.Sources;
 
 namespace Orayo.Views;
 
 public sealed partial class MoreWindow : Window
 {
     private const int GWL_HWNDPARENT = -8;
+    private const string UpdateRepositoryUrl = "https://github.com/barkure/Orayo";
     private const int DefaultWidth = 900;
     private const int DefaultHeight = 810;
 
@@ -62,8 +67,17 @@ public sealed partial class MoreWindow : Window
         WindowMinSizeHelper.Apply(this, DefaultWidth, DefaultHeight);
 
         Closed += OnClosed;
+        RefreshAppVersion();
         _ = LoadSettingsAsync();
         _ = RefreshVersionAsync();
+    }
+
+    private void RefreshAppVersion()
+    {
+        var manager = CreateUpdateManager();
+        var version = manager.CurrentVersion?.ToString() ?? ThisAssemblyVersion();
+        var mode = manager.IsPortable ? "便携版" : manager.IsInstalled ? "安装版" : "开发版";
+        AppVersionTextBlock.Text = $"当前版本：{version}（{mode}）";
     }
 
     private async Task LoadSettingsAsync()
@@ -121,6 +135,63 @@ public sealed partial class MoreWindow : Window
         }, "Geo 数据文件已更新");
     }
 
+    private async void CheckAppUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetBusy(true);
+        StatusTextBlock.Text = "正在检查应用更新";
+        try
+        {
+            var manager = CreateUpdateManager();
+            if (!manager.IsInstalled)
+            {
+                StatusTextBlock.Text = "当前运行方式不支持自动更新，请下载安装包或便携版新版本后替换。";
+                return;
+            }
+
+            var update = await manager.CheckForUpdatesAsync();
+            if (update is null)
+            {
+                StatusTextBlock.Text = "当前已是最新版本";
+                return;
+            }
+
+            var targetVersion = update.TargetFullRelease.Version.ToString();
+            var confirmed = await ConfirmAsync(
+                "发现新版本",
+                $"发现 Orayo {targetVersion}，是否现在下载并重启完成更新？");
+            if (!confirmed)
+            {
+                StatusTextBlock.Text = "已取消应用更新";
+                return;
+            }
+
+            await manager.DownloadUpdatesAsync(
+                update,
+                progress => DispatcherQueue.TryEnqueue(() =>
+                {
+                    StatusTextBlock.Text = $"正在下载应用更新：{progress}%";
+                }),
+                CancellationToken.None);
+
+            StatusTextBlock.Text = "下载完成，正在重启应用";
+            await _prepareCoreUpdateAsync();
+            if (Application.Current is App app)
+            {
+                app.PrepareForRestart();
+            }
+
+            manager.ApplyUpdatesAndRestart(update.TargetFullRelease, Array.Empty<string>());
+        }
+        catch (Exception ex)
+        {
+            StatusTextBlock.Text = ex.Message;
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private async Task RunActionAsync(string pendingText, Func<Task> action, string doneText)
     {
         SetBusy(true);
@@ -144,6 +215,7 @@ public sealed partial class MoreWindow : Window
     {
         UpdateCoreButton.IsEnabled = !isBusy;
         UpdateGeofilesButton.IsEnabled = !isBusy;
+        CheckAppUpdateButton.IsEnabled = !isBusy;
     }
 
     private async void AutoStartToggleButton_Click(object sender, RoutedEventArgs e)
@@ -188,6 +260,31 @@ public sealed partial class MoreWindow : Window
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    private static UpdateManager CreateUpdateManager()
+    {
+        var source = new GithubSource(UpdateRepositoryUrl, accessToken: null, prerelease: false);
+        return new UpdateManager(source);
+    }
+
+    private static string ThisAssemblyVersion()
+    {
+        return typeof(App).Assembly.GetName().Version?.ToString() ?? "未知";
+    }
+
+    private async Task<bool> ConfirmAsync(string title, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            PrimaryButtonText = "更新并重启",
+            CloseButtonText = "取消",
+            XamlRoot = ((FrameworkElement)Content).XamlRoot
+        };
+
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
 
     private void OnClosed(object sender, WindowEventArgs args)
     {

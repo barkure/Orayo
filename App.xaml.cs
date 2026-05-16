@@ -58,6 +58,12 @@ public partial class App : Application
         Environment.Exit(0);
     }
 
+    public void PrepareForRestart(bool fastShutdown = true)
+    {
+        CleanupOnExit(fastShutdown);
+        DisposeTrayIcon();
+    }
+
     private void InitializeTrayIcon()
     {
         DisposeTrayIcon();
