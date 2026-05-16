@@ -36,10 +36,15 @@ public sealed partial class DnsSettingsWindow : Window
         _owner = owner;
         _initialDnsJson = DnsPresetService.EnsureDnsBodyJson(dnsJson);
         InitializeComponent();
+        WindowThemeHelper.Apply(this);
 
-        AppWindow.Title = "DNS 设置";
+        const string title = "DNS 设置";
+        AppWindow.Title = title;
+        AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
+        TitleBarTextBlock.Text = title;
+        SetTitleBar(TitleBarGrid);
+
         AppWindow.Resize(new SizeInt32(DefaultWidth, DefaultHeight));
-        AppWindow.TitleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
 
         var presenter = OverlappedPresenter.CreateForDialog();
         presenter.IsModal = true;
@@ -50,6 +55,10 @@ public sealed partial class DnsSettingsWindow : Window
 
         Closed += OnClosed;
         Activated += DnsSettingsWindow_Activated;
+        if (Content is FrameworkElement root)
+        {
+            root.ActualThemeChanged += DnsSettingsWindow_ThemeChanged;
+        }
     }
 
     public Task<string?> ShowModalAsync()
@@ -63,6 +72,7 @@ public sealed partial class DnsSettingsWindow : Window
     {
         if (_editorReady)
         {
+            await ApplyEditorThemeAsync();
             return;
         }
 
@@ -76,10 +86,20 @@ public sealed partial class DnsSettingsWindow : Window
         }
     }
 
+    private async void DnsSettingsWindow_ThemeChanged(FrameworkElement sender, object args)
+    {
+        if (_editorReady)
+        {
+            await ApplyEditorThemeAsync();
+        }
+    }
+
     private async Task InitializeEditorAsync()
     {
+        ApplyEditorHostTheme();
         await EditorWebView.EnsureCoreWebView2Async();
         EditorWebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+        EditorWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
         EditorWebView.NavigationCompleted += EditorWebView_NavigationCompleted;
 
         var editorFolder = Path.Combine(AppContext.BaseDirectory, "Assets", "editor");
@@ -101,6 +121,7 @@ public sealed partial class DnsSettingsWindow : Window
         await WaitForEditorReadyAsync();
         _editorReady = true;
         ClearError();
+        await ApplyEditorThemeAsync();
         await SetEditorContentAsync(_initialDnsJson);
     }
 
@@ -201,6 +222,20 @@ public sealed partial class DnsSettingsWindow : Window
     {
         var core = EditorWebView.CoreWebView2 ?? throw new InvalidOperationException("WebView2 尚未初始化完成。");
         return await core.ExecuteScriptAsync(script);
+    }
+
+    private async Task ApplyEditorThemeAsync()
+    {
+        ApplyEditorHostTheme();
+        var theme = WindowThemeHelper.IsDarkMode() ? "dark" : "light";
+        await ExecuteScriptAsync($"window.setOrayoTheme && window.setOrayoTheme('{theme}');");
+    }
+
+    private void ApplyEditorHostTheme()
+    {
+        EditorWebView.DefaultBackgroundColor = WindowThemeHelper.IsDarkMode()
+            ? Windows.UI.Color.FromArgb(255, 31, 31, 31)
+            : Windows.UI.Color.FromArgb(255, 246, 246, 246);
     }
 
     private void ShowError(string message)

@@ -30,10 +30,15 @@ public sealed partial class RouteRuleEditorWindow : Window
     {
         _owner = owner;
         InitializeComponent();
+        WindowThemeHelper.Apply(this);
 
-        AppWindow.Title = isEdit ? "编辑路由规则" : "新增路由规则";
+        var title = isEdit ? "编辑路由规则" : "新增路由规则";
+        AppWindow.Title = title;
+        AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
+        TitleBarTextBlock.Text = title;
+        SetTitleBar(TitleBarGrid);
+
         AppWindow.Resize(new SizeInt32(DefaultWidth, DefaultHeight));
-        AppWindow.TitleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
 
         var presenter = OverlappedPresenter.CreateForDialog();
         presenter.IsModal = true;

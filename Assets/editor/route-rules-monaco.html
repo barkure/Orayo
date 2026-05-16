@@ -6,9 +6,26 @@
   <title>Route Rules Monaco</title>
   <style>
     :root {
-      color-scheme: light;
-      --app-bg: #f6f6f6;
-      --editor-bg: #fbfbfb;
+      color-scheme: light dark;
+      
+      --editor-bg: rgba(251, 251, 251);
+      --border: #e3e3e3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --editor-bg: rgba(37, 37, 38);
+        --border: #3a3a3a;
+      }
+    }
+
+    html[data-theme="dark"] {
+      --editor-bg: rgba(37, 37, 38);
+      --border: #3a3a3a;
+    }
+
+    html[data-theme="light"] {
+      --editor-bg: rgba(251, 251, 251);
       --border: #e3e3e3;
     }
 
@@ -46,6 +63,7 @@
   <script>
     window.__editorReady = false;
     window.__pendingValue = '';
+    window.__themeOverride = '';
   </script>
   <script src="./monaco/vs/loader.js"></script>
   <script>
@@ -85,6 +103,45 @@
         }
       });
 
+      monaco.editor.defineTheme('orayo-dark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: 'string.key.json', foreground: '9CDCFE' },
+          { token: 'string.value.json', foreground: 'CE9178' },
+          { token: 'number', foreground: 'B5CEA8' },
+          { token: 'keyword', foreground: '569CD6' }
+        ],
+        colors: {
+          'editor.background': '#252526',
+          'editor.foreground': '#D4D4D4',
+          'editorLineNumber.foreground': '#858585',
+          'editorLineNumber.activeForeground': '#C6C6C6',
+          'editorIndentGuide.background1': '#3a3a3a',
+          'editor.selectionBackground': '#264F78',
+          'editor.inactiveSelectionBackground': '#3A3D41',
+          'editor.lineHighlightBackground': '#2A2D2E',
+          'editorCursor.foreground': '#FFFFFF',
+          'scrollbarSlider.background': '#79797966',
+          'scrollbarSlider.hoverBackground': '#646464aa',
+          'scrollbarSlider.activeBackground': '#bfbfbfcc'
+        }
+      });
+
+      const themeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const getEditorTheme = function () {
+        if (window.__themeOverride === 'dark') {
+          return 'orayo-dark';
+        }
+
+        if (window.__themeOverride === 'light') {
+          return 'orayo-light';
+        }
+
+        return themeQuery.matches ? 'orayo-dark' : 'orayo-light';
+      };
+      window.__getEditorTheme = getEditorTheme;
+
       const editor = monaco.editor.create(document.getElementById('editor'), {
         value: window.__pendingValue || '',
         language: 'json',
@@ -96,7 +153,7 @@
         scrollBeyondLastLine: false,
         tabSize: 2,
         insertSpaces: true,
-        theme: 'orayo-light',
+        theme: getEditorTheme(),
         wordWrap: 'off',
         folding: true,
         renderValidationDecorations: 'on',
@@ -109,6 +166,11 @@
           showSnippets: false,
           showKeywords: false
         },
+        contextmenu: false,
+        scrollbar: {
+          verticalScrollbarSize: 8,
+          horizontalScrollbarSize: 8
+        },
         padding: { top: 12, bottom: 12 },
         fontSize: 13,
         fontFamily: 'Cascadia Mono, Consolas, monospace'
@@ -116,7 +178,20 @@
 
       window.__editor = editor;
       window.__editorReady = true;
+
+      themeQuery.addEventListener('change', function () {
+        monaco.editor.setTheme(getEditorTheme());
+      });
     });
+
+    window.setOrayoTheme = function (theme) {
+      window.__themeOverride = theme === 'dark' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = window.__themeOverride;
+
+      if (window.__editor) {
+        monaco.editor.setTheme(window.__getEditorTheme ? window.__getEditorTheme() : 'orayo-light');
+      }
+    };
 
     window.setEditorContent = function (text) {
       if (window.__editorReady && window.__editor) {

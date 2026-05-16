@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,6 +11,57 @@ namespace Orayo.Services;
 
 public class XrayService
 {
+    private const uint JobObjectLimitKillOnJobClose = 0x00002000;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+    {
+        public long PerProcessUserTimeLimit;
+        public long PerJobUserTimeLimit;
+        public uint LimitFlags;
+        public UIntPtr MinimumWorkingSetSize;
+        public UIntPtr MaximumWorkingSetSize;
+        public uint ActiveProcessLimit;
+        public UIntPtr Affinity;
+        public uint PriorityClass;
+        public uint SchedulingClass;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct IO_COUNTERS
+    {
+        public ulong ReadOperationCount;
+        public ulong WriteOperationCount;
+        public ulong OtherOperationCount;
+        public ulong ReadTransferCount;
+        public ulong WriteTransferCount;
+        public ulong OtherTransferCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+    {
+        public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+        public IO_COUNTERS IoInfo;
+        public UIntPtr ProcessMemoryLimit;
+        public UIntPtr JobMemoryLimit;
+        public UIntPtr PeakProcessMemoryUsed;
+        public UIntPtr PeakJobMemoryUsed;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetInformationJobObject(IntPtr hJob, int jobObjectInfoClass, IntPtr lpJobObjectInfo, uint cbJobObjectInfoLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr hObject);
+
+    private IntPtr _jobHandle;
     private static readonly string ExePath = Path.Combine(
         AppContext.BaseDirectory, "Assets", "engine", "xray.exe");
 
@@ -180,6 +232,7 @@ public class XrayService
 
             BeginStartupLogCapture();
             _process.Start();
+            TryAttachJobObject(_process);
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
 
@@ -240,10 +293,65 @@ public class XrayService
         {
             _process.Dispose();
             _process = null;
+            CloseJobObject();
         }
 
         AppendLog("[已停止]");
         RunningChanged?.Invoke(this, false);
+    }
+
+    private void TryAttachJobObject(Process process)
+    {
+        CloseJobObject();
+
+        _jobHandle = CreateJobObject(IntPtr.Zero, $"OrayoXrayJob-{Environment.ProcessId}");
+        if (_jobHandle == IntPtr.Zero)
+        {
+            AppendLog("[警告] 未能创建作业对象，无法绑定进程生命周期。");
+            return;
+        }
+
+        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+            {
+                LimitFlags = JobObjectLimitKillOnJobClose
+            }
+        };
+
+        var size = (uint)Marshal.SizeOf(info);
+        var ptr = Marshal.AllocHGlobal((int)size);
+        try
+        {
+            Marshal.StructureToPtr(info, ptr, false);
+            if (!SetInformationJobObject(_jobHandle, 9, ptr, size))
+            {
+                AppendLog("[警告] 无法设置作业对象限制，xray 无法跟随退出。");
+                CloseJobObject();
+                return;
+            }
+
+            if (!AssignProcessToJobObject(_jobHandle, process.Handle))
+            {
+                AppendLog("[警告] 无法将 xray 绑定到作业对象。");
+                CloseJobObject();
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
+    }
+
+    private void CloseJobObject()
+    {
+        if (_jobHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        CloseHandle(_jobHandle);
+        _jobHandle = IntPtr.Zero;
     }
 
     private async Task FlushSystemDnsCacheAsync()

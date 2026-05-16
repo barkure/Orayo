@@ -34,11 +34,15 @@ public sealed partial class ServerEditorWindow : Window
         _owner = owner;
         Server = server.Clone();
         InitializeComponent();
+        WindowThemeHelper.Apply(this);
 
         AppWindow.Title = title;
+        AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
+        TitleBarTextBlock.Text = title;
+        SetTitleBar(TitleBarGrid);
+
         SaveButton.Content = saveButtonText;
         AppWindow.Resize(new SizeInt32(DefaultWidth, DefaultHeight));
-        AppWindow.TitleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
 
         var presenter = OverlappedPresenter.CreateForDialog();
         presenter.IsModal = true;

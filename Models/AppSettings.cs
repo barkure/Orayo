@@ -16,6 +16,8 @@ public class AppSettings
 
     public bool IsSystemProxyEnabled { get; set; } = true;
 
+    public bool IsAutoStartEnabled { get; set; }
+
     public string? LastTunServerHost { get; set; }
 
     public string? RoutingRuleJson { get; set; }

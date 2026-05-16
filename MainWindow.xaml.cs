@@ -1,22 +1,20 @@
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Windowing;
+using Orayo.Helpers;
+using Orayo.Models;
+using Orayo.Services;
+using Orayo.Views;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
-using Orayo.Helpers;
-using Orayo.Models;
-using Orayo.Services;
-using Orayo.Views;
 
 namespace Orayo;
 
@@ -138,9 +136,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public MainWindow()
     {
         InitializeComponent();
+        WindowThemeHelper.Apply(this);
+        AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
+        SetTitleBar(TitleBarGrid);
         SetWindowIcon();
-        AppWindow.Resize(new SizeInt32(1300, 810));
-        WindowMinSizeHelper.Apply(this, 1300, 810);
+        AppWindow.Resize(new SizeInt32(1300, 815));
+        WindowMinSizeHelper.Apply(this, 1300, 815);
         AppWindow.Closing += OnAppWindowClosing;
         Closed += OnClosed;
         _xray.RunningChanged += Xray_RunningChanged;
@@ -212,6 +213,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach (var server in await _store.LoadServersAsync())
         {
+            server.IsActive = false;
             Servers.Add(server);
         }
 
@@ -753,24 +755,25 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         var wasActive = ReferenceEquals(_activeServer, server);
+        if (wasActive)
+        {
+            await ShowMessageAsync("无法删除", "正在使用的节点无法删除，请先切换到其他节点。");
+            return;
+        }
+
         var index = Servers.IndexOf(server);
+        var wasSelected = ReferenceEquals(SelectedServer, server);
         Servers.Remove(server);
 
         if (Servers.Count == 0)
         {
-            if (wasActive)
-            {
-                _xray.StopForShutdown();
-                SystemProxyService.ClearProxy();
-                CleanupTunRoutesSafely();
-                SetActiveServer(null);
-                IsRunning = false;
-            }
             SelectedServer = null;
         }
-        else
+        else if (wasSelected)
         {
+            _isApplyingSelection = true;
             SelectedServer = Servers[Math.Clamp(index, 0, Servers.Count - 1)];
+            _isApplyingSelection = false;
         }
 
         if (_settings.LastSelectedServerId == server.Id)
@@ -838,9 +841,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SetActiveServer(ServerEntry? server)
     {
-        if (_activeServer is not null)
+        foreach (var entry in Servers)
         {
-            _activeServer.IsActive = false;
+            entry.IsActive = false;
         }
 
         _activeServer = server;

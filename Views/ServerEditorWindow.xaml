@@ -8,11 +8,16 @@
 
     <Grid Padding="24,24,8,24" RowSpacing="16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,16,0">
+        <Grid x:Name="TitleBarGrid" Margin="-24,-24,-8,0" Padding="24,12,8,12" Background="Transparent">
+            <TextBlock x:Name="TitleBarTextBlock" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,16,0">
             <StackPanel Spacing="12" MinWidth="420">
                 <TextBlock Text="基础信息" Style="{ThemeResource BodyStrongTextBlockStyle}" />
                 <TextBox x:Name="NameTextBox" Header="名称" PlaceholderText="例如：JP-01" />
@@ -66,7 +71,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,0,16,0">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,0,16,0">
             <Button x:Name="SaveButton" Style="{StaticResource AccentButtonStyle}" Content="添加" MinWidth="96" Click="SaveButton_Click" />
             <Button Content="取消" MinWidth="96" Click="CancelButton_Click" />
         </StackPanel>

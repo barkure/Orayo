@@ -10,11 +10,16 @@
     <Grid Padding="24,8,20,20" RowSpacing="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Spacing="4">
+        <Grid x:Name="TitleBarGrid" Margin="-24,-8,-20,0" Padding="24,12,20,12" Background="Transparent">
+            <TextBlock x:Name="TitleBarTextBlock" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </Grid>
+
+        <StackPanel Grid.Row="1" Spacing="4">
             <StackPanel Orientation="Horizontal" Spacing="4">
                 <TextBlock Text="配置更改保存后立即生效，规则可参考" Opacity="0.72" VerticalAlignment="Center" />
                 <HyperlinkButton Content="Project X - Routing"
@@ -31,9 +36,9 @@
                        Visibility="Collapsed" />
         </StackPanel>
 
-        <WebView2 x:Name="EditorWebView" Grid.Row="1" />
+        <WebView2 x:Name="EditorWebView" Grid.Row="2" />
 
-        <Grid Grid.Row="2" ColumnSpacing="16">
+        <Grid Grid.Row="3" ColumnSpacing="16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />

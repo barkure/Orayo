@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      - "v*.*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example v26.5.17.1"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build and publish release
+    runs-on: windows-latest
+
+    env:
+      DOTNET_NOLOGO: true
+      CONFIGURATION: Release
+      RUNTIME_ID: win-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $version = if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            "${{ inputs.version }}"
+          } else {
+            "${{ github.ref_name }}"
+          }
+
+          if ($version -notmatch '^v\d{2}\.\d{1,2}\.\d{1,2}(\.\d+)?$') {
+            throw "Version '$version' is invalid. Use a tag like v26.5.17.1."
+          }
+
+          $numericVersion = $version.TrimStart('v')
+          $assemblyVersion = if (($numericVersion -split '\.').Count -eq 3) {
+            "$numericVersion.0"
+          } else {
+            $numericVersion
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "numeric_version=$numericVersion" >> $env:GITHUB_OUTPUT
+          "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore Orayo.csproj -r $env:RUNTIME_ID
+
+      - name: Verify bundled runtime assets
+        shell: pwsh
+        run: |
+          $requiredFiles = @(
+            "Assets/engine/xray.exe",
+            "Assets/engine/wintun.dll",
+            "Assets/rules/geoip.dat",
+            "Assets/rules/geosite.dat"
+          )
+
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              throw "Required bundled asset is missing: $file"
+            }
+          }
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          dotnet publish Orayo.csproj `
+            -c $env:CONFIGURATION `
+            -r $env:RUNTIME_ID `
+            --self-contained true `
+            -p:WindowsAppSDKSelfContained=true `
+            -p:PublishSingleFile=false `
+            -p:PublishReadyToRun=true `
+            -p:Version=${{ steps.version.outputs.assembly_version }} `
+            -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} `
+            -p:FileVersion=${{ steps.version.outputs.assembly_version }} `
+            -o artifacts/publish
+
+      - name: Package portable zip
+        id: package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $zipName = "Orayo-$version-portable.zip"
+          $zipPath = Join-Path "artifacts" $zipName
+
+          Compress-Archive -Path "artifacts/publish/*" -DestinationPath $zipPath -Force
+
+          "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+          "zip_path=$zipPath" >> $env:GITHUB_OUTPUT
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress --yes
+
+      - name: Build installer
+        id: installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $numericVersion = "${{ steps.version.outputs.numeric_version }}"
+          $setupBaseName = "Orayo-$version-setup"
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+
+          & $iscc "build/installer/Orayo.iss" `
+            "/DAppVersion=$numericVersion" `
+            "/DOutputBaseFilename=$setupBaseName" `
+            "/DOutputDir=..\..\artifacts"
+
+          $setupPath = Join-Path "artifacts" "$setupBaseName.exe"
+          if (-not (Test-Path $setupPath)) {
+            throw "Installer was not generated: $setupPath"
+          }
+
+          "setup_name=$setupBaseName.exe" >> $env:GITHUB_OUTPUT
+          "setup_path=$setupPath" >> $env:GITHUB_OUTPUT
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Orayo-${{ steps.version.outputs.version }}
+          path: |
+            ${{ steps.package.outputs.zip_path }}
+            ${{ steps.installer.outputs.setup_path }}
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Orayo ${{ steps.version.outputs.version }}
+          files: |
+            ${{ steps.package.outputs.zip_path }}
+            ${{ steps.installer.outputs.setup_path }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true
