@@ -1,0 +1,18 @@
+.vs/
+bin/
+obj/
+
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+Thumbs.db
+Desktop.ini
+
+# Visual Studio / WinUI build artifacts
+TestResult*/
+AppPackages/
+BundleArtifacts/
+*.cache
+*.log

@@ -1,0 +1,75 @@
+<ContentDialog
+    x:Class="Orayo.Views.RouteRuleEditorDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="路由规则"
+    PrimaryButtonText="保存"
+    CloseButtonText="取消"
+    DefaultButton="Primary"
+    PrimaryButtonClick="ContentDialog_PrimaryButtonClick">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="560" Padding="0,0,8,0">
+        <StackPanel Spacing="16" MinWidth="500" MaxWidth="560" Padding="4,0,16,0">
+            <Border
+                Padding="14"
+                CornerRadius="12"
+                BorderThickness="1"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="规则内容" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="按顺序匹配，命中后会按目标出站处理。" Opacity="0.68" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Grid ColumnSpacing="12" RowSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Spacing="6">
+                    <TextBlock Text="名称" FontWeight="SemiBold" />
+                    <TextBox x:Name="NameTextBox" PlaceholderText="例如：Google 走代理" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
+                    <TextBlock Text="匹配类型" FontWeight="SemiBold" />
+                    <ComboBox x:Name="TypeComboBox">
+                        <x:String>domain</x:String>
+                        <x:String>ip</x:String>
+                        <x:String>process</x:String>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                    <TextBlock Text="目标出站" FontWeight="SemiBold" />
+                    <ComboBox x:Name="OutboundComboBox">
+                        <x:String>proxy</x:String>
+                        <x:String>direct</x:String>
+                        <x:String>block</x:String>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="6">
+                    <TextBlock Text="匹配内容" FontWeight="SemiBold" />
+                    <TextBox x:Name="MatchTextBox"
+                             PlaceholderText="例如：geosite:google / geoip:private / WeChat.exe"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             MinHeight="108" />
+                    <TextBlock Text="域名支持 geosite，IP 支持 geoip/CIDR，进程支持 exe 名称。" Opacity="0.6" TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>
+

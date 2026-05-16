@@ -1,0 +1,55 @@
+<Window
+    x:Class="Orayo.Views.DnsSettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="DNS 设置">
+
+    <Grid Padding="24,8,20,20" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="配置更改保存后立即生效，规则可参考" Opacity="0.72" VerticalAlignment="Center" />
+                <HyperlinkButton Content="Project X - DNS"
+                                 NavigateUri="https://xtls.github.io/config/dns.html"
+                                 Padding="0"
+                                 MinWidth="0"
+                                 HorizontalAlignment="Left"
+                                 VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock x:Name="ErrorTextBlock"
+                       Foreground="IndianRed"
+                       TextWrapping="Wrap"
+                       Visibility="Collapsed" />
+        </StackPanel>
+
+        <WebView2 x:Name="EditorWebView" Grid.Row="1" />
+
+        <Grid Grid.Row="2" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="格式化" MinWidth="88" Click="FormatButton_Click" />
+                <Button Content="重置" MinWidth="88" Click="RestoreDefaultsButton_Click" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <Button Style="{StaticResource AccentButtonStyle}" Content="保存" MinWidth="96" Click="SaveButton_Click" />
+                <Button Content="取消" MinWidth="96" Click="CancelButton_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
+
+

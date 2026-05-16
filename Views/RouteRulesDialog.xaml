@@ -1,0 +1,92 @@
+<ContentDialog
+    x:Class="Orayo.Views.RouteRulesDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:model="using:Orayo.Models"
+    mc:Ignorable="d"
+    Title="路由规则"
+    PrimaryButtonText="保存"
+    CloseButtonText="取消"
+    DefaultButton="Primary"
+    PrimaryButtonClick="ContentDialog_PrimaryButtonClick">
+
+    <Grid RowSpacing="12" MinWidth="840" MinHeight="520">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="这里编辑的是默认规则模板的副本。首次启动会自动写入，之后你改的是你自己的版本；“恢复默认规则”会重建整套默认规则。" Opacity="0.68" TextWrapping="Wrap" />
+
+        <Grid Grid.Row="1" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.1*" />
+                <ColumnDefinition Width="0.9*" />
+            </Grid.ColumnDefinitions>
+
+            <ListView x:Name="RulesListView" SelectionMode="Single" SelectionChanged="RulesListView_SelectionChanged">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="model:CustomRoutingRule">
+                        <Grid Padding="8,6" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind Match}" Opacity="0.75" TextWrapping="WrapWholeWords" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind DisplayType}" Opacity="0.7" />
+                                <TextBlock Text="-" Opacity="0.7" />
+                                <TextBlock Text="{x:Bind DisplayOutbound}" Opacity="0.7" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <Border Grid.Column="1"
+                    Padding="16"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="EditorTitleTextBlock" Text="编辑规则" FontSize="16" FontWeight="SemiBold" />
+                    <TextBox x:Name="NameTextBox" Header="名称" PlaceholderText="例如：Google 走代理" />
+                    <ComboBox x:Name="TypeComboBox" Header="匹配类型">
+                        <x:String>domain</x:String>
+                        <x:String>ip</x:String>
+                        <x:String>process</x:String>
+                    </ComboBox>
+                    <TextBox x:Name="MatchTextBox" Header="匹配内容" PlaceholderText="例如：geosite:google / geoip:private / WeChat.exe" />
+                    <ComboBox x:Name="OutboundComboBox" Header="目标出站">
+                        <x:String>proxy</x:String>
+                        <x:String>direct</x:String>
+                        <x:String>block</x:String>
+                    </ComboBox>
+                    <CheckBox x:Name="EnabledCheckBox" Content="启用规则" IsChecked="True" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="ApplyRuleButton" Content="应用到列表" Click="ApplyRuleButton_Click" />
+                        <Button Content="清空编辑区" Click="ClearEditorButton_Click" />
+                    </StackPanel>
+                    <TextBlock Text="在这里修改后点“应用到列表”，最后再点对话框右下角“保存”才会真正写入设置。" Opacity="0.68" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
+            <Button Content="新增" Click="AddButton_Click" />
+            <Button Content="编辑" Click="EditButton_Click" />
+            <Button Content="删除" Click="DeleteButton_Click" />
+            <Button Content="上移" Click="MoveUpButton_Click" />
+            <Button Content="下移" Click="MoveDownButton_Click" />
+            <Button Content="恢复默认规则" Click="RestoreDefaultsButton_Click" />
+        </StackPanel>
+    </Grid>
+</ContentDialog>
+
