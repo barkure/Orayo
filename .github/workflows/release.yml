@@ -127,6 +127,39 @@ jobs:
             --releaseName "Orayo $version" `
             --tag $version
 
+      - name: Generate GitHub release notes
+        id: release_notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tagName = '${{ steps.version.outputs.version }}';
+            const generated = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tagName,
+              target_commitish: context.sha
+            });
+
+            core.setOutput('body', generated.data.body);
+
+      - name: Update GitHub release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tagName = '${{ steps.version.outputs.version }}';
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: tagName
+            });
+
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              body: ${{ toJson(steps.release_notes.outputs.body) }}
+            });
+
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
