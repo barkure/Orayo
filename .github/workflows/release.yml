@@ -119,15 +119,6 @@ jobs:
             --icon Assets/AppIcon.ico `
             --outputDir artifacts/velopack
 
-          $portablePath = "artifacts/velopack/Orayo-win-Portable.zip"
-          $setupPath = "artifacts/velopack/Orayo-win-Setup.exe"
-          if (Test-Path $portablePath) {
-            Move-Item $portablePath "artifacts/velopack/Orayo-$version-Portable.zip" -Force
-          }
-          if (Test-Path $setupPath) {
-            Move-Item $setupPath "artifacts/velopack/Orayo-$version-Setup.exe" -Force
-          }
-
           vpk upload github `
             --repoUrl $repoUrl `
             --token "${{ secrets.GITHUB_TOKEN }}" `
@@ -136,6 +127,34 @@ jobs:
             --merge `
             --releaseName "Orayo $version" `
             --tag $version
+
+      - name: Rename GitHub release downloads
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tagName = '${{ steps.version.outputs.version }}';
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: tagName
+            });
+
+            const names = new Map([
+              ['Orayo-win-Portable.zip', `Orayo-${tagName}-Portable.zip`],
+              ['Orayo-win-Setup.exe', `Orayo-${tagName}-Setup.exe`]
+            ]);
+
+            for (const asset of release.data.assets) {
+              const newName = names.get(asset.name);
+              if (!newName) continue;
+
+              await github.rest.repos.updateReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                asset_id: asset.id,
+                name: newName
+              });
+            }
 
       - name: Generate GitHub release notes
         id: release_notes
