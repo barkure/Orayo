@@ -35,6 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="Assets\editor\monaco\**" />
+    <None Remove="Assets\editor\monaco\**" />
+    <None Include="Assets\editor\monaco\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Assets\editor\route-rules-monaco.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

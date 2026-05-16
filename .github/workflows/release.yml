@@ -108,7 +108,6 @@ jobs:
           $repoUrl = "https://github.com/${{ github.repository }}"
 
           dotnet tool install -g vpk --version 0.0.1298
-          vpk download github --repoUrl $repoUrl --token "${{ secrets.GITHUB_TOKEN }}" --outputDir artifacts/velopack
           vpk pack `
             --packId Orayo `
             --packTitle Orayo `
