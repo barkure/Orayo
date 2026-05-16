@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Win32;
 using Windows.Graphics;
 using Orayo.Helpers;
 using Orayo.Services;
@@ -225,38 +224,27 @@ public sealed partial class MoreWindow : Window
             return;
         }
 
+        var previousValue = _settings.IsAutoStartEnabled;
         _settings.IsAutoStartEnabled = AutoStartToggleButton.IsChecked == true;
         UpdateAutoStartButtonText();
-        ApplyAutoStartSetting(_settings.IsAutoStartEnabled);
+        var applied = AutoStartService.Apply(_settings.IsAutoStartEnabled, _settings.IsTunMode);
+        if (!applied)
+        {
+            _settings.IsAutoStartEnabled = previousValue;
+            AutoStartToggleButton.IsChecked = previousValue;
+            UpdateAutoStartButtonText();
+            StatusTextBlock.Text = _settings.IsTunMode
+                ? "TUN 模式开机自启需要管理员权限。"
+                : "开机自启设置失败。";
+            return;
+        }
+
         await _store.SaveSettingsAsync(_settings);
     }
 
     private void UpdateAutoStartButtonText()
     {
         AutoStartToggleButton.Content = _settings.IsAutoStartEnabled ? "开启" : "关闭";
-    }
-
-    private static void ApplyAutoStartSetting(bool enabled)
-    {
-        const string runKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-        using var key = Registry.CurrentUser.OpenSubKey(runKey, writable: true);
-        if (key is null)
-        {
-            return;
-        }
-
-        if (enabled)
-        {
-            var exePath = Environment.ProcessPath ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(exePath))
-            {
-                key.SetValue("Orayo", $"\"{exePath}\"");
-            }
-        }
-        else
-        {
-            key.DeleteValue("Orayo", throwOnMissingValue: false);
-        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();

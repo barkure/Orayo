@@ -329,6 +329,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         _settings.IsTunMode = wantEnable;
         await SaveSettingsSafelyAsync();
+        if (_settings.IsAutoStartEnabled)
+        {
+            AutoStartService.Apply(_settings.IsAutoStartEnabled, _settings.IsTunMode);
+        }
 
         if (SelectedServer is not null)
         {
