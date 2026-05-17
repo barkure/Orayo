@@ -227,15 +227,13 @@ public sealed partial class MoreWindow : Window
         var previousValue = _settings.IsAutoStartEnabled;
         _settings.IsAutoStartEnabled = AutoStartToggleButton.IsChecked == true;
         UpdateAutoStartButtonText();
-        var applied = AutoStartService.Apply(_settings.IsAutoStartEnabled, _settings.IsTunMode);
+        var applied = AutoStartService.Apply(_settings.IsAutoStartEnabled);
         if (!applied)
         {
             _settings.IsAutoStartEnabled = previousValue;
             AutoStartToggleButton.IsChecked = previousValue;
             UpdateAutoStartButtonText();
-            StatusTextBlock.Text = _settings.IsTunMode
-                ? "TUN 模式开机自启需要管理员权限。"
-                : "开机自启设置失败。";
+            StatusTextBlock.Text = "开机自启需要管理员权限。";
             return;
         }
 
@@ -244,7 +242,7 @@ public sealed partial class MoreWindow : Window
 
     private void UpdateAutoStartButtonText()
     {
-        AutoStartToggleButton.Content = _settings.IsAutoStartEnabled ? "开启" : "关闭";
+        AutoStartToggleButton.Content = _settings.IsAutoStartEnabled ? "已开启" : "开启";
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();

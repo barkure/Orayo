@@ -79,6 +79,18 @@
                 Background="Transparent"
                 BorderThickness="0"
                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.Resources>
+                    <SolidColorBrush x:Key="ListViewItemBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBorderBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBorderBrushPointerOver" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBorderBrushSelected" Color="Transparent" />
+                    <SolidColorBrush x:Key="ListViewItemBorderBrushSelectedPointerOver" Color="Transparent" />
+                </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -89,11 +101,12 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="model:ServerEntry">
                         <Border
-                            Padding="14,12"
                             CornerRadius="5"
                             BorderThickness="1"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            PointerEntered="ServerCard_PointerEntered"
+                            PointerExited="ServerCard_PointerExited">
                             <Border.ContextFlyout>
                                 <MenuFlyout>
                                     <MenuFlyoutItem Text="编辑" Click="EditServerMenuItem_Click" />
@@ -102,27 +115,38 @@
                                 </MenuFlyout>
                             </Border.ContextFlyout>
 
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                            <Grid>
+                                <Border
+                                    x:Name="ServerCardHoverOverlay"
+                                    BorderThickness="1"
+                                    BorderBrush="{ThemeResource SystemControlHighlightAccentBrush}"
+                                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                    CornerRadius="5"
+                                    IsHitTestVisible="False"
+                                    Opacity="0" />
 
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="{x:Bind Name}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{x:Bind DisplayProtocol}" Opacity="0.72" />
-                                        <TextBlock Text="{x:Bind Host}" Opacity="0.72" />
-                                        <TextBlock Text="{x:Bind Port}" Opacity="0.72" />
+                                <Grid Padding="14,12" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="{x:Bind Name}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{x:Bind DisplayProtocol}" Opacity="0.72" />
+                                            <TextBlock Text="{x:Bind Host}" Opacity="0.72" />
+                                            <TextBlock Text="{x:Bind Port}" Opacity="0.72" />
+                                        </StackPanel>
                                     </StackPanel>
-                                </StackPanel>
 
-                                <Ellipse Grid.Column="1"
-                                         Width="10"
-                                         Height="10"
-                                         Fill="#22C55E"
-                                         VerticalAlignment="Center"
-                                         Visibility="{x:Bind ActiveVisibility, Mode=OneWay}" />
+                                    <Ellipse Grid.Column="1"
+                                             Width="10"
+                                             Height="10"
+                                             Fill="#22C55E"
+                                             VerticalAlignment="Center"
+                                             Visibility="{x:Bind ActiveVisibility, Mode=OneWay}" />
+                                </Grid>
                             </Grid>
                         </Border>
                     </DataTemplate>

@@ -9,6 +9,10 @@ public static class SystemProxyService
     private const string RegPath = @"Software\Microsoft\Windows\CurrentVersion\Internet Settings";
     private const int InternetOptionSettingsChanged = 39;
     private const int InternetOptionRefresh = 37;
+    private static bool _hasSnapshot;
+    private static object? _originalProxyEnable;
+    private static object? _originalProxyServer;
+    private static object? _originalProxyOverride;
 
     [DllImport("wininet.dll", SetLastError = true)]
     private static extern bool InternetSetOption(
@@ -24,6 +28,7 @@ public static class SystemProxyService
             using var key = Registry.CurrentUser.OpenSubKey(RegPath, writable: true)
                          ?? throw new InvalidOperationException("Unable to open Internet Settings registry key.");
 
+            CaptureSnapshot(key);
             key.SetValue("ProxyEnable", 1, RegistryValueKind.DWord);
             key.SetValue("ProxyServer", $"{host}:{port}", RegistryValueKind.String);
             key.SetValue("ProxyOverride",
@@ -45,19 +50,45 @@ public static class SystemProxyService
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(RegPath, writable: true);
-            if (key is null)
+            if (key is null || !_hasSnapshot)
             {
                 return;
             }
 
-            key.SetValue("ProxyEnable", 0, RegistryValueKind.DWord);
-            key.DeleteValue("ProxyServer", throwOnMissingValue: false);
+            RestoreValue(key, "ProxyEnable", _originalProxyEnable, RegistryValueKind.DWord);
+            RestoreValue(key, "ProxyServer", _originalProxyServer, RegistryValueKind.String);
+            RestoreValue(key, "ProxyOverride", _originalProxyOverride, RegistryValueKind.String);
             key.Flush();
+            _hasSnapshot = false;
             NotifyWindows();
         }
         catch
         {
         }
+    }
+
+    private static void CaptureSnapshot(RegistryKey key)
+    {
+        if (_hasSnapshot)
+        {
+            return;
+        }
+
+        _originalProxyEnable = key.GetValue("ProxyEnable");
+        _originalProxyServer = key.GetValue("ProxyServer");
+        _originalProxyOverride = key.GetValue("ProxyOverride");
+        _hasSnapshot = true;
+    }
+
+    private static void RestoreValue(RegistryKey key, string name, object? value, RegistryValueKind kind)
+    {
+        if (value is null)
+        {
+            key.DeleteValue(name, throwOnMissingValue: false);
+            return;
+        }
+
+        key.SetValue(name, value, kind);
     }
 
     private static void NotifyWindows()

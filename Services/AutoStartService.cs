@@ -12,7 +12,7 @@ public static class AutoStartService
     private const string RunValueName = "Orayo";
     private const string TaskName = "Orayo";
 
-    public static bool Apply(bool enabled, bool tunMode)
+    public static bool Apply(bool enabled)
     {
         if (!enabled)
         {
@@ -26,30 +26,8 @@ public static class AutoStartService
             return false;
         }
 
-        if (tunMode)
-        {
-            RemoveRunEntry();
-            return CreateScheduledTask(exePath);
-        }
-
-        if (!DeleteScheduledTask())
-        {
-            return false;
-        }
-
-        return SetRunEntry(exePath);
-    }
-
-    private static bool SetRunEntry(string exePath)
-    {
-        using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
-        if (key is null)
-        {
-            return false;
-        }
-
-        key.SetValue(RunValueName, $"\"{exePath}\"");
-        return true;
+        RemoveRunEntry();
+        return CreateScheduledTask(exePath);
     }
 
     private static void RemoveRunEntry()
@@ -60,7 +38,7 @@ public static class AutoStartService
 
     private static bool CreateScheduledTask(string exePath)
     {
-        var arguments = $"/Create /TN \"{TaskName}\" /TR \"\\\"{exePath}\\\" --tun\" /SC ONLOGON /RL HIGHEST /F";
+        var arguments = $"/Create /TN \"{TaskName}\" /TR \"\\\"{exePath}\\\"\" /SC ONLOGON /RL HIGHEST /F";
         return RunSchtasks(arguments, requireElevation: !AdminHelper.IsAdministrator());
     }
 

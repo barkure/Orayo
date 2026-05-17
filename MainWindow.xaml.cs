@@ -1,6 +1,8 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Orayo.Helpers;
 using Orayo.Models;
 using Orayo.Services;
@@ -189,18 +191,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _xray.StopForShutdown();
-        if (!fastShutdown)
-        {
-            try
-            {
-                _settings.IsTunMode = false;
-                _settings.LastTunServerHost = null;
-                _store.SaveSettingsAsync(_settings).GetAwaiter().GetResult();
-            }
-            catch
-            {
-            }
-        }
     }
 
     private async Task InitializeAsync()
@@ -329,10 +319,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         _settings.IsTunMode = wantEnable;
         await SaveSettingsSafelyAsync();
-        if (_settings.IsAutoStartEnabled)
-        {
-            AutoStartService.Apply(_settings.IsAutoStartEnabled, _settings.IsTunMode);
-        }
 
         if (SelectedServer is not null)
         {
@@ -401,6 +387,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var ok = await _xray.StartAsync(config);
         if (!ok)
         {
+            if (IsTunMode)
+            {
+                CleanupTunRoutesSafely();
+            }
+
+            SystemProxyService.ClearProxy();
+            SetActiveServer(null);
+            IsRunning = false;
             await ShowMessageAsync("连接失败", string.IsNullOrWhiteSpace(_xray.LastError) ? "xray 启动失败。" : _xray.LastError);
             return;
         }
@@ -453,6 +447,56 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             await EnsureSelectedServerAppliedAsync(forceRestart: true);
         }
+    }
+
+    private void ServerCard_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is not DependencyObject card)
+        {
+            return;
+        }
+
+        SetServerCardHoverOpacity(card, 1);
+    }
+
+    private void ServerCard_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is not DependencyObject card)
+        {
+            return;
+        }
+
+        SetServerCardHoverOpacity(card, 0);
+    }
+
+    private static void SetServerCardHoverOpacity(DependencyObject card, double opacity)
+    {
+        if (FindDescendantByName<Border>(card, "ServerCardHoverOverlay") is { } overlay)
+        {
+            overlay.Opacity = opacity;
+        }
+    }
+
+    private static T? FindDescendantByName<T>(DependencyObject root, string name)
+        where T : FrameworkElement
+    {
+        var childCount = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < childCount; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T element && element.Name == name)
+            {
+                return element;
+            }
+
+            var nested = FindDescendantByName<T>(child, name);
+            if (nested is not null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
     }
 
 
