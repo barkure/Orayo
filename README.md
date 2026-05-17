@@ -1,5 +1,7 @@
 # Orayo
 
+<img src="docs/assets/banner.png" alt="Orayo banner" width="500" />
+
 Orayo is a modern Windows Xray client built with WinUI 3.
 
 ## Features
@@ -13,12 +15,12 @@ Orayo is a modern Windows Xray client built with WinUI 3.
 ## Screenshots
 <table>
   <tr>
-	<td><img src="./ScreenShots/screenshot-1.png" /></td>
-	<td><img src="./ScreenShots/screenshot-2.png" /></td>
+	<td><img src="docs/assets/screenshot-1.png" /></td>
+	<td><img src="docs/assets/screenshot-2.png" /></td>
   </tr>
   <tr>
-	<td><img src="./ScreenShots/screenshot-3.png" /></td>
-	<td><img src="./ScreenShots/screenshot-4.png" /></td>
+	<td><img src="docs/assets/screenshot-3.png" /></td>
+	<td><img src="docs/assets/screenshot-4.png" /></td>
   </tr>
 </table>
 
