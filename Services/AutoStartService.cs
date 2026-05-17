@@ -7,7 +7,6 @@ public static class AutoStartService
 {
     private const string RunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
     private const string RunValueName = "Orayo";
-    private const string AutoStartArgument = "--autostart";
 
     public static bool Apply(bool enabled)
     {
@@ -32,7 +31,7 @@ public static class AutoStartService
                 return false;
             }
 
-            key.SetValue(RunValueName, $"\"{exePath}\" {AutoStartArgument}", RegistryValueKind.String);
+            key.SetValue(RunValueName, $"\"{exePath}\"", RegistryValueKind.String);
             return true;
         }
         catch

@@ -74,21 +74,12 @@ public partial class App : Application
         CoreUpdateService.TryApplyPendingXrayCoreUpdate();
         CoreUpdateService.CleanupVelopackPackages();
 
-        var cmdArgs = Environment.GetCommandLineArgs();
-        var isAutoStartLaunch = Array.Exists(cmdArgs, arg => string.Equals(arg, "--autostart", StringComparison.OrdinalIgnoreCase));
         var window = new MainWindow(_runtime);
 
         _window = window;
         InitializeTrayIcon();
         StartShowWindowListener();
-        if (isAutoStartLaunch)
-        {
-            _window.HideForAutoStart();
-        }
-        else
-        {
-            _window.Activate();
-        }
+        _window.Activate();
 
         _ = _window.StartAsync();
     }
