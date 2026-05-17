@@ -1,6 +1,6 @@
 # Orayo
 
-<img src="docs/assets/banner.png" alt="Orayo banner" width="500" />
+<img src="docs/assets/banner.png" alt="Orayo banner" width="300" />
 
 Orayo is a modern Windows Xray client built with WinUI 3.
 
