@@ -15,8 +15,6 @@ public sealed class TunBrokerRequest
     [JsonPropertyName("configJson")]
     public string? ConfigJson { get; set; }
 
-    [JsonPropertyName("serverHost")]
-    public string? ServerHost { get; set; }
 }
 
 public sealed class TunBrokerResponse

@@ -16,6 +16,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid x:Name="TitleBarGrid" Margin="-24,-16,-24,0" Padding="24,12,24,12" Background="Transparent">
@@ -93,6 +94,22 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
+                <StackPanel Spacing="6">
+                    <TextBlock Text="网络回环管理器" FontWeight="SemiBold" />
+                    <TextBlock Text="用于处理 UWP / Microsoft Store 应用无法访问本机代理的问题" Opacity="0.72" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Button x:Name="OpenLoopbackUtilityButton" Grid.Column="1" Content="打开" MinWidth="96" Click="OpenLoopbackUtilityButton_Click" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="6" Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
                 <StackPanel Spacing="8">
                     <TextBlock Text="关于 Orayo" FontWeight="SemiBold" />
                     <TextBlock Text="一个适用于 Windows 的现代化 Xray 客户端" Opacity="0.72" TextWrapping="Wrap" />
@@ -108,6 +125,6 @@
             </Grid>
         </Border>
 
-        <TextBlock Grid.Row="6" x:Name="StatusTextBlock" VerticalAlignment="Center" Opacity="0.72" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="7" x:Name="StatusTextBlock" VerticalAlignment="Center" Opacity="0.72" TextWrapping="Wrap" />
     </Grid>
 </Window>

@@ -90,13 +90,12 @@ public sealed class TunBrokerClient
         return response;
     }
 
-    public async Task<TunBrokerResponse?> StartAsync(string configJson, string? serverHost)
+    public async Task<TunBrokerResponse?> StartAsync(string configJson)
     {
         var (response, error) = await TrySendAsync(new TunBrokerRequest
         {
             Command = "start",
-            ConfigJson = configJson,
-            ServerHost = serverHost
+            ConfigJson = configJson
         });
         if (response?.Success != true)
         {

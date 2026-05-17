@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
@@ -25,6 +26,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
     private readonly AppStore _store = new();
     private readonly RuntimeService _runtime;
+    private readonly ServerLatencyService _serverLatencyService = new();
     private AppSettings _settings = new();
     private AppRuntimeState _runtimeState = new();
     private ServerEntry? _selectedServer;
@@ -37,7 +39,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private bool _isApplyingSelection;
     private bool _isStateDirty;
     private bool _isRestoringStartupSession;
+    private bool _isLatencyRefreshing;
     private string _routingModeText = "规则路由";
+    private CancellationTokenSource? _latencyRefreshCts;
+
+    private static readonly Brush LatencyDeepGreenBrush = CreateBrush(0x00, 0x82, 0x35);
+    private static readonly Brush LatencyLightGreenBrush = CreateBrush(0x7c, 0xcf, 0x00);
+    private static readonly Brush LatencyYellowBrush = CreateBrush(0xfd, 0xc7, 0x00);
+    private static readonly Brush LatencyOrangeBrush = CreateBrush(0xff, 0x69, 0x00);
+    private static readonly Brush LatencyRedBrush = CreateBrush(0xd9, 0x2d, 0x20);
+    private static readonly Brush LatencyWhiteForegroundBrush = CreateBrush(0xff, 0xff, 0xff);
+    private static readonly Brush LatencyDarkForegroundBrush = CreateBrush(0x1f, 0x29, 0x37);
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -108,6 +120,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public string StatusText => IsRunning && _activeServer is not null ? $"运行中: {_activeServer.Name}" : "未连接";
     public string SelectedSummary => SelectedServer is null ? "未选择节点" : $"当前选中: {SelectedServer.Name}";
     public Visibility IsEmptyHintVisible => Servers.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    public bool IsLatencyRefreshEnabled => !_isLatencyRefreshing && Servers.Count > 0;
     public bool IsTunToggleEnabled => !_isApplyingSelection;
     public bool IsRouteSettingsEnabled => !_isApplyingSelection;
     public bool IsSystemProxyToggleEnabled => !IsTunMode && !_isApplyingSelection;
@@ -220,6 +233,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _isInitializing = false;
 
         OnPropertyChanged(nameof(IsEmptyHintVisible));
+        OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
         OnPropertyChanged(nameof(RouteSettingsSummary));
         OnPropertyChanged(nameof(TunHintText));
 
@@ -236,6 +250,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 SyncTunUiWithSettings();
             }
         }
+
+        ScheduleLatencyRefresh();
     }
 
     private void EnsureDefaultLocalPorts()
@@ -270,6 +286,105 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         return Servers[0];
+    }
+
+    private void ScheduleLatencyRefresh()
+    {
+        if (IsTunMode)
+        {
+            _latencyRefreshCts?.Cancel();
+            _latencyRefreshCts?.Dispose();
+            _latencyRefreshCts = null;
+            return;
+        }
+
+        _latencyRefreshCts?.Cancel();
+        _latencyRefreshCts?.Dispose();
+        _latencyRefreshCts = new CancellationTokenSource();
+        _ = RefreshLatenciesAsync(_latencyRefreshCts.Token);
+    }
+
+    private async Task RefreshLatenciesAsync(CancellationToken cancellationToken)
+    {
+        if (Servers.Count == 0)
+        {
+            return;
+        }
+
+        _isLatencyRefreshing = true;
+        OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+
+        try
+        {
+            await Task.Delay(250, cancellationToken);
+            foreach (var server in Servers)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = await _serverLatencyService.ProbeAsync(server, cancellationToken);
+                ApplyLatencyResult(server, result);
+            }
+        }
+        finally
+        {
+            _isLatencyRefreshing = false;
+            OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+        }
+    }
+
+    private static void ApplyLatencyResult(ServerEntry server, LatencyProbeResult result)
+    {
+        if (result.TimedOut || result.Milliseconds is null)
+        {
+            server.LatencyBadgeText = "超时";
+            server.LatencyBadgeBackground = LatencyRedBrush;
+            server.LatencyBadgeForeground = LatencyWhiteForegroundBrush;
+            server.LatencyBadgeVisibility = Visibility.Visible;
+            return;
+        }
+
+        var milliseconds = Math.Max(0, result.Milliseconds.Value);
+        server.LatencyBadgeText = $"{milliseconds}ms";
+        server.LatencyBadgeVisibility = Visibility.Visible;
+
+        if (milliseconds <= 50)
+        {
+            server.LatencyBadgeBackground = LatencyDeepGreenBrush;
+            server.LatencyBadgeForeground = LatencyWhiteForegroundBrush;
+            return;
+        }
+
+        if (milliseconds <= 150)
+        {
+            server.LatencyBadgeBackground = LatencyLightGreenBrush;
+            server.LatencyBadgeForeground = LatencyDarkForegroundBrush;
+            return;
+        }
+
+        if (milliseconds <= 250)
+        {
+            server.LatencyBadgeBackground = LatencyYellowBrush;
+            server.LatencyBadgeForeground = LatencyDarkForegroundBrush;
+            return;
+        }
+
+        server.LatencyBadgeBackground = LatencyOrangeBrush;
+        server.LatencyBadgeForeground = LatencyWhiteForegroundBrush;
+    }
+
+    private static Brush CreateBrush(byte r, byte g, byte b)
+    {
+        return new SolidColorBrush(new Windows.UI.Color { A = 255, R = r, G = g, B = b });
+    }
+
+    private async void LatencyRefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsTunMode)
+        {
+            await ShowMessageAsync("无法检测", "请关闭 TUN 后测试延迟");
+            return;
+        }
+
+        ScheduleLatencyRefresh();
     }
 
     private async Task EnsureSelectedServerAppliedAsync(bool forceRestart)
@@ -655,6 +770,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         await _store.SaveServersAsync(Servers);
         OnPropertyChanged(nameof(IsEmptyHintVisible));
+        OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+        ScheduleLatencyRefresh();
     }
 
     private async void AddServerButton_Click(object sender, RoutedEventArgs e)
@@ -670,6 +787,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         SelectedServer = server;
         await _store.SaveServersAsync(Servers);
         OnPropertyChanged(nameof(IsEmptyHintVisible));
+        OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+        ScheduleLatencyRefresh();
     }
 
 
@@ -702,6 +821,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         await _store.SaveServersAsync(Servers);
+        ScheduleLatencyRefresh();
     }
 
     private async void DeleteServerMenuItem_Click(object sender, RoutedEventArgs e)
@@ -746,6 +866,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         await _store.SaveServersAsync(Servers);
         OnPropertyChanged(nameof(IsEmptyHintVisible));
+        OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+        ScheduleLatencyRefresh();
     }
 
     private async void ShareServerMenuItem_Click(object sender, RoutedEventArgs e)

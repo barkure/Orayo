@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using System.Text.Json.Serialization;
 
 namespace Orayo.Models;
 
@@ -33,6 +35,10 @@ public class ServerEntry : INotifyPropertyChanged
     private string _vlessEncryption = string.Empty;
     private string _finalmask = string.Empty;
     private bool _isActive;
+    private string _latencyBadgeText = string.Empty;
+    private Visibility _latencyBadgeVisibility = Visibility.Collapsed;
+    private Brush _latencyBadgeBackground = new SolidColorBrush(new Windows.UI.Color { A = 255, R = 0, G = 130, B = 53 });
+    private Brush _latencyBadgeForeground = new SolidColorBrush(new Windows.UI.Color { A = 255, R = 255, G = 255, B = 255 });
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -91,7 +97,36 @@ public class ServerEntry : INotifyPropertyChanged
         }
     }
 
+    [JsonIgnore]
     public Visibility ActiveVisibility => IsActive ? Visibility.Visible : Visibility.Collapsed;
+
+    [JsonIgnore]
+    public string LatencyBadgeText
+    {
+        get => _latencyBadgeText;
+        set => SetProperty(ref _latencyBadgeText, value);
+    }
+
+    [JsonIgnore]
+    public Visibility LatencyBadgeVisibility
+    {
+        get => _latencyBadgeVisibility;
+        set => SetProperty(ref _latencyBadgeVisibility, value);
+    }
+
+    [JsonIgnore]
+    public Brush LatencyBadgeBackground
+    {
+        get => _latencyBadgeBackground;
+        set => SetProperty(ref _latencyBadgeBackground, value);
+    }
+
+    [JsonIgnore]
+    public Brush LatencyBadgeForeground
+    {
+        get => _latencyBadgeForeground;
+        set => SetProperty(ref _latencyBadgeForeground, value);
+    }
 
     public string DisplayProtocol => Protocol.ToLowerInvariant() switch
     {

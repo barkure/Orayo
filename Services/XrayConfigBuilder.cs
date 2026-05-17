@@ -14,7 +14,7 @@ public static class XrayConfigBuilder
         TypeInfoResolver = new DefaultJsonTypeInfoResolver()
     };
 
-    public static string Build(ServerEntry server, AppSettings settings, string? sendThrough = null)
+    public static string Build(ServerEntry server, AppSettings settings)
     {
         var config = new JsonObject
         {
@@ -24,7 +24,7 @@ public static class XrayConfigBuilder
             },
             ["dns"] = BuildDns(settings),
             ["inbounds"] = BuildInbounds(settings),
-            ["outbounds"] = BuildOutbounds(server, settings, sendThrough),
+            ["outbounds"] = BuildOutbounds(server),
             ["routing"] = BuildRouting(settings),
         };
 
@@ -139,9 +139,9 @@ public static class XrayConfigBuilder
         };
     }
 
-    private static JsonArray BuildOutbounds(ServerEntry server, AppSettings settings, string? sendThrough)
+    private static JsonArray BuildOutbounds(ServerEntry server)
     {
-        var list = new JsonArray
+        return new JsonArray
         {
             BuildProxyOutbound(server),
             new JsonObject
@@ -157,81 +157,30 @@ public static class XrayConfigBuilder
                 ["settings"] = new JsonObject()
             }
         };
-
-        if (settings.IsTunMode && !string.IsNullOrWhiteSpace(sendThrough))
-        {
-            foreach (var outbound in list)
-            {
-                if (outbound is not JsonObject node)
-                {
-                    continue;
-                }
-
-                var tag = node["tag"]?.GetValue<string>();
-                if (tag is "proxy" or "direct")
-                {
-                    node["sendThrough"] = sendThrough;
-                }
-            }
-        }
-
-        return list;
     }
 
     private static JsonObject BuildRouting(AppSettings settings)
     {
-        var tunRules = new JsonArray();
-
-        if (settings.IsTunMode)
-        {
-            tunRules.Add(new JsonObject
-            {
-                ["type"] = "field",
-                ["outboundTag"] = "direct",
-                ["process"] = new JsonArray("self/", "xray/")
-            });
-
-            tunRules.Add(new JsonObject
-            {
-                ["type"] = "field",
-                ["outboundTag"] = "block",
-                ["network"] = "udp",
-                ["port"] = "443"
-            });
-        }
-
         if (string.Equals(settings.RoutingMode, "global", StringComparison.OrdinalIgnoreCase))
         {
-            tunRules.Add(new JsonObject
+            var rules = new JsonArray
             {
-                ["type"] = "field",
-                ["outboundTag"] = "proxy",
-                ["network"] = "tcp,udp"
-            });
+                new JsonObject
+                {
+                    ["type"] = "field",
+                    ["outboundTag"] = "proxy",
+                    ["network"] = "tcp,udp"
+                }
+            };
 
             return new JsonObject
             {
                 ["domainStrategy"] = "IPIfNonMatch",
-                ["rules"] = tunRules
+                ["rules"] = rules
             };
         }
 
         var routing = RouteRulePresetService.EnsureRoutingObject(settings.RoutingRuleJson);
-        var mergedRules = new JsonArray();
-        foreach (var rule in tunRules)
-        {
-            mergedRules.Add(rule?.DeepClone());
-        }
-
-        if (routing["rules"] is JsonArray rules)
-        {
-            foreach (var rule in rules)
-            {
-                mergedRules.Add(rule?.DeepClone());
-            }
-        }
-
-        routing["rules"] = mergedRules;
         return routing;
     }
 

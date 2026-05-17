@@ -19,9 +19,6 @@ public sealed class TunBrokerHost
     };
 
     private readonly XrayService _xray = new();
-    private readonly TunService _tunService = new();
-    private string? _currentTunServerHost;
-    private string? _lastTunServerHost;
     private bool _shutdownRequested;
     private DateTimeOffset _lastCommandAt = DateTimeOffset.UtcNow;
 
@@ -158,30 +155,17 @@ public sealed class TunBrokerHost
             return Fail("TUN Broker 错误", "缺少配置。");
         }
 
-        await CleanupPersistedTunRoutesAsync();
         var ok = await _xray.StartAsync(request.ConfigJson);
         if (!ok)
         {
-            CleanupTunRoutesSafely();
             return Fail("连接失败", string.IsNullOrWhiteSpace(_xray.LastError) ? "xray 启动失败。" : _xray.LastError);
         }
-
-        if (!_tunService.ConfigureTunInterface(request.ServerHost))
-        {
-            await _xray.StopAsync();
-            CleanupTunRoutesSafely();
-            return Fail("TUN 模式错误", "xray-tun 网卡静态地址或系统路由配置失败。");
-        }
-
-        _currentTunServerHost = request.ServerHost;
-        _lastTunServerHost = request.ServerHost;
         return Ok();
     }
 
     private async Task<TunBrokerResponse> StopAsync()
     {
         await _xray.StopAsync();
-        CleanupTunRoutesSafely();
         return Ok();
     }
 
@@ -192,50 +176,9 @@ public sealed class TunBrokerHost
         return Ok();
     }
 
-    private async Task CleanupPersistedTunRoutesAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_lastTunServerHost))
-        {
-            return;
-        }
-
-        CleanupTunRoutesSafely();
-        await Task.CompletedTask;
-    }
-
-    private void CleanupTunRoutesSafely()
-    {
-        var serverHost = !string.IsNullOrWhiteSpace(_currentTunServerHost)
-            ? _currentTunServerHost
-            : _lastTunServerHost;
-
-        if (string.IsNullOrWhiteSpace(serverHost))
-        {
-            return;
-        }
-
-        try
-        {
-            _tunService.CleanupTunRoutes(serverHost);
-        }
-        catch
-        {
-        }
-        finally
-        {
-            _currentTunServerHost = null;
-            _lastTunServerHost = null;
-        }
-    }
-
     private void OnXrayRunningChanged(object? sender, bool running)
     {
-        if (running)
-        {
-            return;
-        }
-
-        CleanupTunRoutesSafely();
+        _ = running;
     }
 
     private TunBrokerResponse Ok()

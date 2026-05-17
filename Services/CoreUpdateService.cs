@@ -49,11 +49,16 @@ public static class CoreUpdateService
             return new XrayVersionInfo("未找到 xray.exe", string.Empty, null, "未找到 xray.exe");
         }
 
+        return await ReadXrayVersionInfoAsync(XrayExePath);
+    }
+
+    private static async Task<XrayVersionInfo> ReadXrayVersionInfoAsync(string exePath)
+    {
         using var process = Process.Start(new ProcessStartInfo
         {
-            FileName = XrayExePath,
+            FileName = exePath,
             Arguments = "version",
-            WorkingDirectory = EngineDir,
+            WorkingDirectory = Path.GetDirectoryName(exePath) ?? EngineDir,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
@@ -139,6 +144,16 @@ public static class CoreUpdateService
             if (string.IsNullOrWhiteSpace(extractedXray))
             {
                 throw new InvalidOperationException("Xray 更新包中未找到 xray.exe。");
+            }
+
+            if (File.Exists(XrayExePath))
+            {
+                var currentVersion = await ReadXrayVersionInfoAsync(XrayExePath);
+                var extractedVersion = await ReadXrayVersionInfoAsync(extractedXray);
+                if (CompareVersionStrings(extractedVersion.Version, currentVersion.Version) < 0)
+                {
+                    throw new InvalidOperationException($"检测到更新版本 {extractedVersion.Version} 低于当前版本 {currentVersion.Version}，已跳过更新");
+                }
             }
 
             return new StagedXrayCoreUpdate(tempDir, extractedXray);
@@ -364,6 +379,56 @@ public static class CoreUpdateService
     {
         TryDeleteFile(PendingUpdateManifestPath);
         TryDeleteDirectory(PendingUpdateDir);
+    }
+
+    private static int CompareVersionStrings(string left, string right)
+    {
+        if (!TryParseVersion(left, out var leftParts) || !TryParseVersion(right, out var rightParts))
+        {
+            return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var length = Math.Max(leftParts.Length, rightParts.Length);
+        for (var i = 0; i < length; i++)
+        {
+            var leftValue = i < leftParts.Length ? leftParts[i] : 0;
+            var rightValue = i < rightParts.Length ? rightParts[i] : 0;
+            var comparison = leftValue.CompareTo(rightValue);
+            if (comparison != 0)
+            {
+                return comparison;
+            }
+        }
+
+        return 0;
+    }
+
+    private static bool TryParseVersion(string value, out int[] parts)
+    {
+        parts = Array.Empty<int>();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var tokens = value.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (tokens.Length == 0)
+        {
+            return false;
+        }
+
+        var parsed = new int[tokens.Length];
+        for (var i = 0; i < tokens.Length; i++)
+        {
+            if (!int.TryParse(tokens[i], out parsed[i]))
+            {
+                parts = Array.Empty<int>();
+                return false;
+            }
+        }
+
+        parts = parsed;
+        return true;
     }
 }
 

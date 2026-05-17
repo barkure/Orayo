@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,8 +20,9 @@ public sealed partial class MoreWindow : Window
     private const int GWL_HWNDPARENT = -8;
     private const string UpdateRepositoryUrl = "https://github.com/barkure/Orayo";
     private const string UpdateDownloadUrl = UpdateRepositoryUrl + "/releases/latest/download";
+    private const string LoopbackUtilityRelativePath = "Assets\\tools\\enableloopbackutility.exe";
     private const int DefaultWidth = 900;
-    private const int DefaultHeight = 860;
+    private const int DefaultHeight = 980;
 
     [DllImport("User32.dll", CharSet = CharSet.Auto, EntryPoint = "SetWindowLongPtr")]
     private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
@@ -131,7 +134,7 @@ public sealed partial class MoreWindow : Window
             var manager = CreateUpdateManager();
             if (!manager.IsInstalled)
             {
-                StatusTextBlock.Text = "当前运行方式不支持自动更新，请下载安装包或便携版新版本后替换。";
+                StatusTextBlock.Text = "当前运行方式不支持自动更新，请下载安装包或便携版新版本后替换";
                 return;
             }
 
@@ -202,7 +205,32 @@ public sealed partial class MoreWindow : Window
     {
         UpdateCoreButton.IsEnabled = !isBusy;
         UpdateGeofilesButton.IsEnabled = !isBusy;
+        OpenLoopbackUtilityButton.IsEnabled = !isBusy;
         CheckAppUpdateButton.IsEnabled = !isBusy;
+    }
+
+    private void OpenLoopbackUtilityButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var utilityPath = Path.Combine(AppContext.BaseDirectory, LoopbackUtilityRelativePath);
+            if (!File.Exists(utilityPath))
+            {
+                StatusTextBlock.Text = $"找不到网络回环管理器：{utilityPath}";
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = utilityPath,
+                UseShellExecute = true
+            });
+            StatusTextBlock.Text = "已打开网络回环管理器";
+        }
+        catch (Exception ex)
+        {
+            StatusTextBlock.Text = $"打开网络回环管理器失败：{ex.Message}";
+        }
     }
 
     private async void AutoStartToggleButton_Click(object sender, RoutedEventArgs e)
@@ -221,7 +249,7 @@ public sealed partial class MoreWindow : Window
             _settings.IsAutoStartEnabled = previousValue;
             AutoStartToggleButton.IsChecked = previousValue;
             UpdateAutoStartButtonText();
-            StatusTextBlock.Text = "写入开机自启失败。";
+            StatusTextBlock.Text = "写入开机自启失败";
             return;
         }
 

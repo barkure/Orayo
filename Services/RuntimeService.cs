@@ -72,12 +72,6 @@ public sealed class RuntimeService
                     return RuntimeConnectResult.Failed("TUN 模式错误", $"找不到 wintun.dll\n路径：{_tunService.GetExpectedWintunPath()}");
                 }
 
-                var outbound = _tunService.DetectDefaultOutboundContext();
-                if (outbound is null)
-                {
-                    return RuntimeConnectResult.Failed("TUN 模式错误", "无法确定当前联网出口和默认网关。");
-                }
-
                 if (!await _tunBroker.EnsureBrokerAvailableAsync())
                 {
                     return RuntimeConnectResult.Failed("TUN 模式错误", "无法启动 TUN 权限代理。");
@@ -85,8 +79,8 @@ public sealed class RuntimeService
 
                 SystemProxyService.ClearProxy();
 
-                var config = XrayConfigBuilder.Build(server, settings, outbound.LocalAddress);
-                var response = await _tunBroker.StartAsync(config, server.Host);
+                var config = XrayConfigBuilder.Build(server, settings);
+                var response = await _tunBroker.StartAsync(config);
                 if (response?.Success != true)
                 {
                     SystemProxyService.ClearProxy();
@@ -94,19 +88,6 @@ public sealed class RuntimeService
                     return RuntimeConnectResult.Failed(
                         response?.ErrorTitle ?? "连接失败",
                         response?.ErrorMessage ?? "TUN 启动失败。");
-                }
-
-                var tunReady = await WaitForTunReadyAsync();
-                if (!tunReady)
-                {
-                    await _tunBroker.StopAsync();
-                    SystemProxyService.ClearProxy();
-                    UpdateState(isRunning: false, activeServer: null, isTunSession: true);
-                    return RuntimeConnectResult.Failed(
-                        "TUN 模式错误",
-                        string.IsNullOrWhiteSpace(_tunBroker.LastError)
-                            ? "TUN 启动后未检测到 xray-tun 网卡或运行进程。"
-                            : _tunBroker.LastError);
                 }
 
                 SystemProxyService.ClearProxy();
@@ -219,22 +200,6 @@ public sealed class RuntimeService
     {
         var status = await _tunBroker.GetStatusAsync();
         return status?.IsRunning == true;
-    }
-
-    private async Task<bool> WaitForTunReadyAsync()
-    {
-        for (var attempt = 0; attempt < 20; attempt++)
-        {
-            var status = await _tunBroker.GetStatusAsync();
-            if (status?.IsRunning == true && _tunService.IsTunInterfaceActive() && _tunService.HasExpectedTunAddress())
-            {
-                return true;
-            }
-
-            await Task.Delay(200);
-        }
-
-        return false;
     }
 
     private void OnLocalXrayRunningChanged(object? sender, bool running)
