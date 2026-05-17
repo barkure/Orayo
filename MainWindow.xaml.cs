@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private bool _isTunInternalUpdate;
     private bool _isApplyingSelection;
     private bool _isStateDirty;
+    private bool _isRestoringStartupSession;
     private string _routingModeText = "规则路由";
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -224,7 +225,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         if (SelectedServer is not null)
         {
-            await EnsureSelectedServerAppliedAsync(forceRestart: false);
+            _isRestoringStartupSession = true;
+            try
+            {
+                await EnsureSelectedServerAppliedAsync(forceRestart: false);
+            }
+            finally
+            {
+                _isRestoringStartupSession = false;
+                SyncTunUiWithSettings();
+            }
         }
     }
 
@@ -316,6 +326,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (IsTunMode && !await EnsureTunCanStartAsync())
         {
+            if (_isRestoringStartupSession)
+            {
+                await FallbackFromStartupTunAsync(server);
+                return;
+            }
+
             await ShowTunErrorAsync(string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError) ? "无法启动 TUN 权限代理。" : _runtime.TunBrokerLastError);
             return;
         }
@@ -336,6 +352,37 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         MarkStateDirty();
+    }
+
+    private async Task FallbackFromStartupTunAsync(ServerEntry server)
+    {
+        var errorMessage = string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError)
+            ? "无法启动 TUN 权限代理。"
+            : _runtime.TunBrokerLastError;
+
+        _settings.IsTunMode = false;
+        SyncTunUiWithSettings();
+        await SaveSettingsSafelyAsync();
+
+        var fallbackResult = await _runtime.ConnectAsync(server, _settings, _runtimeState);
+        if (!fallbackResult.Success)
+        {
+            MarkStateDirty();
+            await ShowMessageAsync(
+                fallbackResult.ErrorTitle ?? "连接失败",
+                fallbackResult.ErrorMessage ?? "连接失败。");
+            return;
+        }
+
+        MarkStateDirty();
+        await ShowTunErrorAsync(errorMessage);
+    }
+
+    private void SyncTunUiWithSettings()
+    {
+        _isTunInternalUpdate = true;
+        IsTunMode = _settings.IsTunMode;
+        _isTunInternalUpdate = false;
     }
 
     private async Task<bool> EnsureTunCanStartAsync()
@@ -506,7 +553,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void MoreButton_Click(object sender, RoutedEventArgs e)
     {
-        var window = new MoreWindow(this, PrepareForCoreUpdateAsync, () => HasActiveConnection, RestartSelectedServerAsync);
+        var window = new MoreWindow(this, _settings, PrepareForCoreUpdateAsync, () => HasActiveConnection, RestartSelectedServerAsync);
         window.AppWindow.Show();
         window.Activate();
     }

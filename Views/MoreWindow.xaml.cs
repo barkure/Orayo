@@ -32,16 +32,18 @@ public sealed partial class MoreWindow : Window
     private readonly Func<bool> _shouldRestartConnection;
     private readonly Func<Task> _restartSelectedServerAsync;
     private readonly AppStore _store = new();
-    private AppSettings _settings = new();
+    private readonly AppSettings _settings;
     private bool _isInitializing;
 
     public MoreWindow(
         Window owner,
+        AppSettings settings,
         Func<Task> prepareCoreUpdateAsync,
         Func<bool> shouldRestartConnection,
         Func<Task> restartSelectedServerAsync)
     {
         _owner = owner;
+        _settings = settings;
         _prepareCoreUpdateAsync = prepareCoreUpdateAsync;
         _shouldRestartConnection = shouldRestartConnection;
         _restartSelectedServerAsync = restartSelectedServerAsync;
@@ -67,7 +69,7 @@ public sealed partial class MoreWindow : Window
 
         Closed += OnClosed;
         RefreshAppVersion();
-        _ = LoadSettingsAsync();
+        InitializeSettings();
         _ = RefreshVersionAsync();
     }
 
@@ -79,10 +81,9 @@ public sealed partial class MoreWindow : Window
         AppVersionTextBlock.Text = $"当前版本：{version} ({mode})";
     }
 
-    private async Task LoadSettingsAsync()
+    private void InitializeSettings()
     {
         _isInitializing = true;
-        _settings = await _store.LoadSettingsAsync();
         AutoStartToggleButton.IsChecked = _settings.IsAutoStartEnabled;
         UpdateAutoStartButtonText();
         _isInitializing = false;
