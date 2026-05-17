@@ -10,7 +10,6 @@ using Orayo.Helpers;
 using Orayo.Services;
 using Orayo.Models;
 using Velopack;
-using Velopack.Sources;
 
 namespace Orayo.Views;
 
@@ -18,6 +17,7 @@ public sealed partial class MoreWindow : Window
 {
     private const int GWL_HWNDPARENT = -8;
     private const string UpdateRepositoryUrl = "https://github.com/barkure/Orayo";
+    private const string UpdateDownloadUrl = UpdateRepositoryUrl + "/releases/latest/download";
     private const int DefaultWidth = 900;
     private const int DefaultHeight = 860;
 
@@ -251,8 +251,7 @@ public sealed partial class MoreWindow : Window
 
     private static UpdateManager CreateUpdateManager()
     {
-        var source = new GithubSource(UpdateRepositoryUrl, accessToken: null, prerelease: false);
-        return new UpdateManager(source);
+        return new UpdateManager(UpdateDownloadUrl);
     }
 
     private static string ThisAssemblyVersion()
