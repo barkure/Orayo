@@ -246,6 +246,7 @@ public class XrayService
                 var startupLog = StopStartupLogCaptureAndRead();
                 LastError = startupLog.Length > 0 ? startupLog : $"xray 立即退出（退出码 {_process.ExitCode}）";
                 AppendLog("[错误] 启动失败：" + LastError);
+                DisposeExitedProcess();
                 return false;
             }
 
@@ -258,6 +259,7 @@ public class XrayService
             StopStartupLogCapture();
             LastError = ex.Message;
             AppendLog("[异常] " + ex.Message);
+            DisposeExitedProcess();
             return false;
         }
     }
@@ -352,6 +354,37 @@ public class XrayService
 
         CloseHandle(_jobHandle);
         _jobHandle = IntPtr.Zero;
+    }
+
+    private void DisposeExitedProcess()
+    {
+        var process = _process;
+        if (process is null)
+        {
+            CloseJobObject();
+            return;
+        }
+
+        process.Exited -= OnProcessExited;
+        _process = null;
+
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit(500);
+            }
+
+            process.Dispose();
+        }
+        catch
+        {
+        }
+        finally
+        {
+            CloseJobObject();
+        }
     }
 
     private async Task FlushSystemDnsCacheAsync()

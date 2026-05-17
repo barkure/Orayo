@@ -1,5 +1,8 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.Win32;
 
 namespace Orayo.Services;
@@ -9,10 +12,25 @@ public static class SystemProxyService
     private const string RegPath = @"Software\Microsoft\Windows\CurrentVersion\Internet Settings";
     private const int InternetOptionSettingsChanged = 39;
     private const int InternetOptionRefresh = 37;
+    private static readonly string DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orayo");
+    private static readonly string SnapshotPath = Path.Combine(DataDir, "proxy_snapshot.json");
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+    };
+
     private static bool _hasSnapshot;
-    private static object? _originalProxyEnable;
-    private static object? _originalProxyServer;
-    private static object? _originalProxyOverride;
+    private static int? _originalProxyEnable;
+    private static string? _originalProxyServer;
+    private static string? _originalProxyOverride;
+
+    private sealed class ProxySnapshot
+    {
+        public int? ProxyEnable { get; set; }
+        public string? ProxyServer { get; set; }
+        public string? ProxyOverride { get; set; }
+    }
 
     [DllImport("wininet.dll", SetLastError = true)]
     private static extern bool InternetSetOption(
@@ -50,7 +68,13 @@ public static class SystemProxyService
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(RegPath, writable: true);
-            if (key is null || !_hasSnapshot)
+            if (key is null)
+            {
+                return;
+            }
+
+            EnsureSnapshotLoaded();
+            if (!_hasSnapshot)
             {
                 return;
             }
@@ -60,6 +84,7 @@ public static class SystemProxyService
             RestoreValue(key, "ProxyOverride", _originalProxyOverride, RegistryValueKind.String);
             key.Flush();
             _hasSnapshot = false;
+            TryDeleteFile(SnapshotPath);
             NotifyWindows();
         }
         catch
@@ -74,13 +99,19 @@ public static class SystemProxyService
             return;
         }
 
-        _originalProxyEnable = key.GetValue("ProxyEnable");
-        _originalProxyServer = key.GetValue("ProxyServer");
-        _originalProxyOverride = key.GetValue("ProxyOverride");
+        if (EnsureSnapshotLoaded())
+        {
+            return;
+        }
+
+        _originalProxyEnable = ReadDWord(key, "ProxyEnable");
+        _originalProxyServer = key.GetValue("ProxyServer") as string;
+        _originalProxyOverride = key.GetValue("ProxyOverride") as string;
         _hasSnapshot = true;
+        SaveSnapshot();
     }
 
-    private static void RestoreValue(RegistryKey key, string name, object? value, RegistryValueKind kind)
+    private static void RestoreValue(RegistryKey key, string name, int? value, RegistryValueKind kind)
     {
         if (value is null)
         {
@@ -89,6 +120,92 @@ public static class SystemProxyService
         }
 
         key.SetValue(name, value, kind);
+    }
+
+    private static void RestoreValue(RegistryKey key, string name, string? value, RegistryValueKind kind)
+    {
+        if (value is null)
+        {
+            key.DeleteValue(name, throwOnMissingValue: false);
+            return;
+        }
+
+        key.SetValue(name, value, kind);
+    }
+
+    private static int? ReadDWord(RegistryKey key, string name)
+    {
+        var value = key.GetValue(name);
+        return value switch
+        {
+            int intValue => intValue,
+            string text when int.TryParse(text, out var parsed) => parsed,
+            _ => null
+        };
+    }
+
+    private static bool EnsureSnapshotLoaded()
+    {
+        if (_hasSnapshot)
+        {
+            return true;
+        }
+
+        try
+        {
+            if (!File.Exists(SnapshotPath))
+            {
+                return false;
+            }
+
+            var snapshot = JsonSerializer.Deserialize<ProxySnapshot>(File.ReadAllText(SnapshotPath), JsonOptions);
+            if (snapshot is null)
+            {
+                return false;
+            }
+
+            _originalProxyEnable = snapshot.ProxyEnable;
+            _originalProxyServer = snapshot.ProxyServer;
+            _originalProxyOverride = snapshot.ProxyOverride;
+            _hasSnapshot = true;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void SaveSnapshot()
+    {
+        try
+        {
+            Directory.CreateDirectory(DataDir);
+            var snapshot = new ProxySnapshot
+            {
+                ProxyEnable = _originalProxyEnable,
+                ProxyServer = _originalProxyServer,
+                ProxyOverride = _originalProxyOverride
+            };
+            File.WriteAllText(SnapshotPath, JsonSerializer.Serialize(snapshot, JsonOptions));
+        }
+        catch
+        {
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch
+        {
+        }
     }
 
     private static void NotifyWindows()

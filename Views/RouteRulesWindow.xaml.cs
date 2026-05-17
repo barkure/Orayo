@@ -30,6 +30,7 @@ public sealed partial class RouteRulesWindow : Window
     private readonly string _initialRoutingJson;
     private bool _completed;
     private bool _editorReady;
+    private bool _isInitializingEditor;
 
     public RouteRulesWindow(Window owner, string? routingJson)
     {
@@ -76,13 +77,23 @@ public sealed partial class RouteRulesWindow : Window
             return;
         }
 
+        if (_isInitializingEditor)
+        {
+            return;
+        }
+
         try
         {
+            _isInitializingEditor = true;
             await InitializeEditorAsync();
         }
         catch (Exception ex)
         {
             ShowError($"Monaco 编辑器初始化失败：{ex.Message}");
+        }
+        finally
+        {
+            _isInitializingEditor = false;
         }
     }
 
@@ -112,17 +123,24 @@ public sealed partial class RouteRulesWindow : Window
 
     private async void EditorWebView_NavigationCompleted(WebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
     {
-        if (!args.IsSuccess)
+        try
         {
-            ShowError($"Monaco 页面加载失败：{args.WebErrorStatus}");
-            return;
-        }
+            if (!args.IsSuccess)
+            {
+                ShowError($"Monaco 页面加载失败：{args.WebErrorStatus}");
+                return;
+            }
 
-        await WaitForEditorReadyAsync();
-        _editorReady = true;
-        ClearError();
-        await ApplyEditorThemeAsync();
-        await SetEditorContentAsync(_initialRoutingJson);
+            await WaitForEditorReadyAsync();
+            _editorReady = true;
+            ClearError();
+            await ApplyEditorThemeAsync();
+            await SetEditorContentAsync(_initialRoutingJson);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Monaco 编辑器初始化失败：{ex.Message}");
+        }
     }
 
     private async void FormatButton_Click(object sender, RoutedEventArgs e)
@@ -251,6 +269,12 @@ public sealed partial class RouteRulesWindow : Window
 
     private void OnClosed(object sender, WindowEventArgs args)
     {
+        EditorWebView.NavigationCompleted -= EditorWebView_NavigationCompleted;
+        if (Content is FrameworkElement root)
+        {
+            root.ActualThemeChanged -= RouteRulesWindow_ThemeChanged;
+        }
+
         Complete(null);
         _owner.Activate();
     }

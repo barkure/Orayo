@@ -30,6 +30,7 @@ public sealed partial class DnsSettingsWindow : Window
     private readonly string _initialDnsJson;
     private bool _completed;
     private bool _editorReady;
+    private bool _isInitializingEditor;
 
     public DnsSettingsWindow(Window owner, string? dnsJson)
     {
@@ -76,13 +77,23 @@ public sealed partial class DnsSettingsWindow : Window
             return;
         }
 
+        if (_isInitializingEditor)
+        {
+            return;
+        }
+
         try
         {
+            _isInitializingEditor = true;
             await InitializeEditorAsync();
         }
         catch (Exception ex)
         {
             ShowError($"Monaco 编辑器初始化失败：{ex.Message}");
+        }
+        finally
+        {
+            _isInitializingEditor = false;
         }
     }
 
@@ -112,17 +123,24 @@ public sealed partial class DnsSettingsWindow : Window
 
     private async void EditorWebView_NavigationCompleted(WebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
     {
-        if (!args.IsSuccess)
+        try
         {
-            ShowError($"Monaco 页面加载失败：{args.WebErrorStatus}");
-            return;
-        }
+            if (!args.IsSuccess)
+            {
+                ShowError($"Monaco 页面加载失败：{args.WebErrorStatus}");
+                return;
+            }
 
-        await WaitForEditorReadyAsync();
-        _editorReady = true;
-        ClearError();
-        await ApplyEditorThemeAsync();
-        await SetEditorContentAsync(_initialDnsJson);
+            await WaitForEditorReadyAsync();
+            _editorReady = true;
+            ClearError();
+            await ApplyEditorThemeAsync();
+            await SetEditorContentAsync(_initialDnsJson);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Monaco 编辑器初始化失败：{ex.Message}");
+        }
     }
 
     private async void FormatButton_Click(object sender, RoutedEventArgs e)
@@ -252,6 +270,12 @@ public sealed partial class DnsSettingsWindow : Window
 
     private void OnClosed(object sender, WindowEventArgs args)
     {
+        EditorWebView.NavigationCompleted -= EditorWebView_NavigationCompleted;
+        if (Content is FrameworkElement root)
+        {
+            root.ActualThemeChanged -= DnsSettingsWindow_ThemeChanged;
+        }
+
         Complete(null);
         _owner.Activate();
     }

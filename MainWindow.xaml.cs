@@ -301,19 +301,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task HandleTunToggleAsync(bool wantEnable)
     {
-        if (wantEnable && !AdminHelper.IsAdministrator())
+        if (wantEnable && !await EnsureTunCanStartAsync())
         {
-            _isTunInternalUpdate = true;
-            IsTunMode = false;
-            _isTunInternalUpdate = false;
-
-            var confirmed = await ConfirmAsync("开启 TUN 模式", "开启 TUN 模式需要管理员权限，程序将重启。是否继续？");
-            if (!confirmed)
-            {
-                return;
-            }
-
-            RestartAsAdmin("--tun");
             return;
         }
 
@@ -363,6 +352,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task ConnectServerAsync(ServerEntry server)
     {
+        if (IsTunMode && !await EnsureTunCanStartAsync())
+        {
+            return;
+        }
 
         var portConflict = await PortConflictService.EnsurePortsAvailableForCurrentXrayAsync(_settings.LocalSocksPort, _settings.LocalHttpPort);
         if (!string.IsNullOrWhiteSpace(portConflict))
@@ -422,6 +415,29 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         await SaveSettingsSafelyAsync();
         SetActiveServer(server);
         IsRunning = true;
+    }
+
+    private async Task<bool> EnsureTunCanStartAsync()
+    {
+        if (!IsTunMode || AdminHelper.IsAdministrator())
+        {
+            return true;
+        }
+
+        _isTunInternalUpdate = true;
+        IsTunMode = false;
+        _isTunInternalUpdate = false;
+
+        var confirmed = await ConfirmAsync("开启 TUN 模式", "TUN 模式需要管理员权限，程序将以管理员身份重启。是否继续？");
+        if (confirmed)
+        {
+            RestartAsAdmin("--tun");
+            return false;
+        }
+
+        _settings.IsTunMode = false;
+        await SaveSettingsSafelyAsync();
+        return false;
     }
 
     private async void RoutingModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

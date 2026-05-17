@@ -123,8 +123,37 @@ public static class CoreUpdateService
     public static async Task UpdateGeofilesAsync()
     {
         Directory.CreateDirectory(RulesDir);
-        await DownloadAndReplaceFileAsync(GeoipUrl, Path.Combine(RulesDir, "geoip.dat"));
-        await DownloadAndReplaceFileAsync(GeositeUrl, Path.Combine(RulesDir, "geosite.dat"));
+        var tempDir = Path.Combine(Path.GetTempPath(), "Orayo", "geofiles-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        var geoipPath = Path.Combine(RulesDir, "geoip.dat");
+        var geositePath = Path.Combine(RulesDir, "geosite.dat");
+        var stagedGeoip = Path.Combine(tempDir, "geoip.dat");
+        var stagedGeosite = Path.Combine(tempDir, "geosite.dat");
+        var geoipBackup = geoipPath + "." + Guid.NewGuid().ToString("N") + ".bak";
+        var geositeBackup = geositePath + "." + Guid.NewGuid().ToString("N") + ".bak";
+
+        try
+        {
+            await DownloadFileAsync(GeoipUrl, stagedGeoip);
+            await DownloadFileAsync(GeositeUrl, stagedGeosite);
+            BackupFile(geoipPath, geoipBackup);
+            BackupFile(geositePath, geositeBackup);
+            ReplaceFile(stagedGeoip, geoipPath);
+            ReplaceFile(stagedGeosite, geositePath);
+        }
+        catch
+        {
+            RestoreBackup(geoipBackup, geoipPath);
+            RestoreBackup(geositeBackup, geositePath);
+            throw;
+        }
+        finally
+        {
+            TryDeleteFile(geoipBackup);
+            TryDeleteFile(geositeBackup);
+            TryDeleteDirectory(tempDir);
+        }
     }
 
     private static async Task DownloadFileAsync(string url, string path)
@@ -146,20 +175,6 @@ public static class CoreUpdateService
         }
     }
 
-    private static async Task DownloadAndReplaceFileAsync(string url, string targetPath)
-    {
-        var tempPath = targetPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try
-        {
-            await DownloadFileAsync(url, tempPath);
-            ReplaceFile(tempPath, targetPath);
-        }
-        finally
-        {
-            TryDeleteFile(tempPath);
-        }
-    }
-
     private static void ReplaceFile(string sourcePath, string targetPath)
     {
         var tempPath = targetPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
@@ -171,6 +186,28 @@ public static class CoreUpdateService
         finally
         {
             TryDeleteFile(tempPath);
+        }
+    }
+
+    private static void BackupFile(string sourcePath, string backupPath)
+    {
+        if (File.Exists(sourcePath))
+        {
+            File.Copy(sourcePath, backupPath, overwrite: true);
+        }
+    }
+
+    private static void RestoreBackup(string backupPath, string targetPath)
+    {
+        try
+        {
+            if (File.Exists(backupPath))
+            {
+                File.Copy(backupPath, targetPath, overwrite: true);
+            }
+        }
+        catch
+        {
         }
     }
 

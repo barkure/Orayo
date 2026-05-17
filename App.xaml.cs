@@ -2,6 +2,8 @@ using Microsoft.UI.Xaml;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Forms = System.Windows.Forms;
 using Orayo.Services;
 using Velopack;
@@ -10,12 +12,23 @@ namespace Orayo;
 
 public partial class App : Application
 {
+    private const string SingleInstanceMutexName = @"Local\Orayo.SingleInstance";
+    private const string ShowWindowEventName = @"Local\Orayo.ShowWindow";
+    private static Mutex? _singleInstanceMutex;
+    private static EventWaitHandle? _showWindowEvent;
     private MainWindow? _window;
     private Forms.NotifyIcon? _trayIcon;
 
     public App()
     {
         VelopackApp.Build().Run();
+        if (!TryClaimSingleInstance())
+        {
+            SignalExistingInstance();
+            Environment.Exit(0);
+            return;
+        }
+
         InitializeComponent();
         UnhandledException += App_UnhandledException;
     }
@@ -48,6 +61,7 @@ public partial class App : Application
 
         _window = window;
         InitializeTrayIcon();
+        StartShowWindowListener();
         _window.Activate();
     }
 
@@ -55,6 +69,7 @@ public partial class App : Application
     {
         CleanupOnExit(fastShutdown);
         DisposeTrayIcon();
+        ReleaseSingleInstance();
         Environment.Exit(0);
     }
 
@@ -62,6 +77,7 @@ public partial class App : Application
     {
         CleanupOnExit(fastShutdown);
         DisposeTrayIcon();
+        ReleaseSingleInstance();
     }
 
     private void InitializeTrayIcon()
@@ -90,6 +106,55 @@ public partial class App : Application
         _window?.ShowFromTray();
     }
 
+    private static bool TryClaimSingleInstance()
+    {
+        try
+        {
+            _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out var createdNew);
+            return createdNew;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private static void SignalExistingInstance()
+    {
+        try
+        {
+            using var signal = EventWaitHandle.OpenExisting(ShowWindowEventName);
+            signal.Set();
+        }
+        catch
+        {
+        }
+    }
+
+    private void StartShowWindowListener()
+    {
+        _showWindowEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowWindowEventName);
+        var dispatcher = _window?.DispatcherQueue;
+        if (dispatcher is null)
+        {
+            return;
+        }
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                while (_showWindowEvent.WaitOne())
+                {
+                    dispatcher.TryEnqueue(ShowMainWindow);
+                }
+            }
+            catch
+            {
+            }
+        });
+    }
+
     private void DisposeTrayIcon()
     {
         if (_trayIcon is null)
@@ -109,6 +174,22 @@ public partial class App : Application
         if (_window is MainWindow mainWindow)
         {
             mainWindow.StopBackgroundServicesOnExit(fastShutdown);
+        }
+    }
+
+    private static void ReleaseSingleInstance()
+    {
+        try
+        {
+            _showWindowEvent?.Set();
+            _showWindowEvent?.Dispose();
+            _showWindowEvent = null;
+            _singleInstanceMutex?.ReleaseMutex();
+            _singleInstanceMutex?.Dispose();
+            _singleInstanceMutex = null;
+        }
+        catch
+        {
         }
     }
 }
