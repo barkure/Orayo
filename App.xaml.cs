@@ -81,7 +81,11 @@ public partial class App : Application
         _window = window;
         InitializeTrayIcon();
         StartShowWindowListener();
-        if (!isAutoStartLaunch)
+        if (isAutoStartLaunch)
+        {
+            _window.HideForAutoStart();
+        }
+        else
         {
             _window.Activate();
         }

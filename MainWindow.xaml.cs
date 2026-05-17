@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -23,6 +24,10 @@ namespace Orayo;
 
 public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    private const int SwHide = 0;
     private readonly AppStore _store = new();
     private readonly RuntimeService _runtime;
     private AppSettings _settings = new();
@@ -174,6 +179,29 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public void HideForShutdown()
     {
         AppWindow.Hide();
+    }
+
+    public void HideForAutoStart()
+    {
+        try
+        {
+            AppWindow.Hide();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            if (hwnd != IntPtr.Zero)
+            {
+                ShowWindow(hwnd, SwHide);
+            }
+        }
+        catch
+        {
+        }
     }
 
     public async Task PersistStateForShutdownAsync()

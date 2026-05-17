@@ -72,10 +72,10 @@ public sealed class RuntimeService
                     return RuntimeConnectResult.Failed("TUN 模式错误", $"找不到 wintun.dll\n路径：{_tunService.GetExpectedWintunPath()}");
                 }
 
-                var tunOutboundInterfaceName = _tunService.DetectDefaultOutboundInterfaceName();
-                if (string.IsNullOrWhiteSpace(tunOutboundInterfaceName))
+                var outbound = _tunService.DetectDefaultOutboundContext();
+                if (outbound is null)
                 {
-                    return RuntimeConnectResult.Failed("TUN 模式错误", "无法确定默认出站网卡，请确认 Wi-Fi 或以太网已连接。");
+                    return RuntimeConnectResult.Failed("TUN 模式错误", "无法确定当前联网出口和默认网关。");
                 }
 
                 if (!await _tunBroker.EnsureBrokerAvailableAsync())
@@ -85,7 +85,7 @@ public sealed class RuntimeService
 
                 SystemProxyService.ClearProxy();
 
-                var config = XrayConfigBuilder.Build(server, settings, tunOutboundInterfaceName);
+                var config = XrayConfigBuilder.Build(server, settings, outbound.LocalAddress);
                 var response = await _tunBroker.StartAsync(config, server.Host);
                 if (response?.Success != true)
                 {
@@ -226,7 +226,7 @@ public sealed class RuntimeService
         for (var attempt = 0; attempt < 20; attempt++)
         {
             var status = await _tunBroker.GetStatusAsync();
-            if (status?.IsRunning == true && _tunService.IsTunInterfaceActive())
+            if (status?.IsRunning == true && _tunService.IsTunInterfaceActive() && _tunService.HasExpectedTunAddress())
             {
                 return true;
             }

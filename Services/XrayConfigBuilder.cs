@@ -14,7 +14,7 @@ public static class XrayConfigBuilder
         TypeInfoResolver = new DefaultJsonTypeInfoResolver()
     };
 
-    public static string Build(ServerEntry server, AppSettings settings, string? tunOutboundInterfaceName = null)
+    public static string Build(ServerEntry server, AppSettings settings, string? sendThrough = null)
     {
         var config = new JsonObject
         {
@@ -24,7 +24,7 @@ public static class XrayConfigBuilder
             },
             ["dns"] = BuildDns(settings),
             ["inbounds"] = BuildInbounds(settings),
-            ["outbounds"] = BuildOutbounds(server, settings, tunOutboundInterfaceName),
+            ["outbounds"] = BuildOutbounds(server, settings, sendThrough),
             ["routing"] = BuildRouting(settings),
         };
 
@@ -66,8 +66,9 @@ public static class XrayConfigBuilder
             ["settings"] = new JsonObject
             {
                 ["name"] = "xray-tun",
-                ["MTU"] = 9000,
+                ["mtu"] = 1500,
                 ["gateway"] = new JsonArray("172.18.0.1/30"),
+                ["dns"] = new JsonArray("1.1.1.1", "8.8.8.8"),
                 ["autoSystemRoutingTable"] = new JsonArray("0.0.0.0/0"),
                 ["autoOutboundsInterface"] = "auto"
             },
@@ -138,7 +139,7 @@ public static class XrayConfigBuilder
         };
     }
 
-    private static JsonArray BuildOutbounds(ServerEntry server, AppSettings settings, string? tunOutboundInterfaceName)
+    private static JsonArray BuildOutbounds(ServerEntry server, AppSettings settings, string? sendThrough)
     {
         var list = new JsonArray
         {
@@ -157,41 +158,24 @@ public static class XrayConfigBuilder
             }
         };
 
-        if (settings.IsTunMode && !string.IsNullOrWhiteSpace(tunOutboundInterfaceName))
+        if (settings.IsTunMode && !string.IsNullOrWhiteSpace(sendThrough))
         {
             foreach (var outbound in list)
             {
-                if (outbound is JsonObject node)
+                if (outbound is not JsonObject node)
                 {
-                    var tag = node["tag"]?.GetValue<string>();
-                    if (tag is "proxy" or "direct")
-                    {
-                        ApplyOutboundInterface(node, tunOutboundInterfaceName);
-                    }
+                    continue;
+                }
+
+                var tag = node["tag"]?.GetValue<string>();
+                if (tag is "proxy" or "direct")
+                {
+                    node["sendThrough"] = sendThrough;
                 }
             }
         }
 
         return list;
-    }
-
-    private static void ApplyOutboundInterface(JsonObject outbound, string interfaceName)
-    {
-        var streamSettings = outbound["streamSettings"] as JsonObject;
-        if (streamSettings is null)
-        {
-            streamSettings = new JsonObject();
-            outbound["streamSettings"] = streamSettings;
-        }
-
-        var sockopt = streamSettings["sockopt"] as JsonObject;
-        if (sockopt is null)
-        {
-            sockopt = new JsonObject();
-            streamSettings["sockopt"] = sockopt;
-        }
-
-        sockopt["interface"] = interfaceName;
     }
 
     private static JsonObject BuildRouting(AppSettings settings)

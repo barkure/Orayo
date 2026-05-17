@@ -166,6 +166,13 @@ public sealed class TunBrokerHost
             return Fail("连接失败", string.IsNullOrWhiteSpace(_xray.LastError) ? "xray 启动失败。" : _xray.LastError);
         }
 
+        if (!_tunService.ConfigureTunInterface(request.ServerHost))
+        {
+            await _xray.StopAsync();
+            CleanupTunRoutesSafely();
+            return Fail("TUN 模式错误", "xray-tun 网卡静态地址或系统路由配置失败。");
+        }
+
         _currentTunServerHost = request.ServerHost;
         _lastTunServerHost = request.ServerHost;
         return Ok();
