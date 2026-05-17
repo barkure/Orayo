@@ -1,0 +1,31 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - github-actions[bot]
+
+  categories:
+    - title: 功能
+      labels:
+        - feature
+        - enhancement
+
+    - title: 修复
+      labels:
+        - bug
+        - fix
+
+    - title: 重构与维护
+      labels:
+        - refactor
+        - chore
+        - cleanup
+
+    - title: 文档
+      labels:
+        - documentation
+
+    - title: 其他变更
+      labels:
+        - "*"
