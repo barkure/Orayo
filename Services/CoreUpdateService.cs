@@ -18,6 +18,7 @@ public static class CoreUpdateService
     private static readonly string RulesDir = Path.Combine(AppContext.BaseDirectory, "Assets", "rules");
     private static readonly string XrayExePath = Path.Combine(EngineDir, "xray.exe");
     private static readonly string DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orayo");
+    private static readonly string VelopackPackagesDir = Path.Combine(DataDir, "packages");
     private static readonly string PendingUpdateDir = Path.Combine(DataDir, "pending-update");
     private static readonly string PendingUpdateManifestPath = Path.Combine(PendingUpdateDir, "pending-xray-update.json");
     private const string XrayWindows64Url = "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-windows-64.zip";
@@ -192,6 +193,37 @@ public static class CoreUpdateService
         catch
         {
             return false;
+        }
+    }
+
+    public static void CleanupVelopackPackages()
+    {
+        try
+        {
+            if (!Directory.Exists(VelopackPackagesDir))
+            {
+                return;
+            }
+
+            foreach (var file in Directory.GetFiles(VelopackPackagesDir))
+            {
+                var fileName = Path.GetFileName(file);
+                if (string.Equals(fileName, ".betaId", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(fileName, ".velopack_lock", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                TryDeleteFile(file);
+            }
+
+            foreach (var directory in Directory.GetDirectories(VelopackPackagesDir))
+            {
+                TryDeleteDirectory(directory);
+            }
+        }
+        catch
+        {
         }
     }
 
