@@ -3,7 +3,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/banner-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="./docs/assets/banner-light.png">
-  <img alt="Orayo banner" src="./docs/assets/banner-light.png" width="300">
+  <img alt="Orayo banner" src="./docs/assets/banner-light.png" width="250">
 </picture>
 
 Orayo is a modern Windows Xray client built with WinUI 3.
