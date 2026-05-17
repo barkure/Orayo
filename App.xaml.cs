@@ -71,6 +71,8 @@ public partial class App : Application
             return;
         }
 
+        CoreUpdateService.TryApplyPendingXrayCoreUpdate();
+
         var cmdArgs = Environment.GetCommandLineArgs();
         var isAutoStartLaunch = Array.Exists(cmdArgs, arg => string.Equals(arg, "--autostart", StringComparison.OrdinalIgnoreCase));
         var window = new MainWindow(_runtime);

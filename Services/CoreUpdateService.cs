@@ -7,6 +7,8 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Orayo.Services;
 
@@ -15,15 +17,29 @@ public static class CoreUpdateService
     private static readonly string EngineDir = Path.Combine(AppContext.BaseDirectory, "Assets", "engine");
     private static readonly string RulesDir = Path.Combine(AppContext.BaseDirectory, "Assets", "rules");
     private static readonly string XrayExePath = Path.Combine(EngineDir, "xray.exe");
+    private static readonly string DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orayo");
+    private static readonly string PendingUpdateDir = Path.Combine(DataDir, "pending-update");
+    private static readonly string PendingUpdateManifestPath = Path.Combine(PendingUpdateDir, "pending-xray-update.json");
     private const string XrayWindows64Url = "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-windows-64.zip";
     private const string GeoipUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat";
     private const string GeositeUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat";
     private static readonly TimeSpan DownloadTimeout = TimeSpan.FromSeconds(300);
     private static readonly Regex VersionRegex = new(@"Xray\s+(?<version>[0-9.]+).*?\)\s+(?<commit>[0-9a-f]{7,})\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+    };
     private static readonly HttpClient HttpClient = new()
     {
         Timeout = DownloadTimeout
     };
+
+    private sealed class PendingXrayUpdateManifest
+    {
+        public string? XrayExePath { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+    }
 
     public static async Task<XrayVersionInfo> GetXrayVersionInfoAsync()
     {
@@ -88,6 +104,25 @@ public static class CoreUpdateService
         }
     }
 
+    public sealed class StagedGeofilesUpdate : IDisposable
+    {
+        internal StagedGeofilesUpdate(string tempDir, string geoipPath, string geositePath)
+        {
+            TempDir = tempDir;
+            GeoipPath = geoipPath;
+            GeositePath = geositePath;
+        }
+
+        internal string TempDir { get; }
+        internal string GeoipPath { get; }
+        internal string GeositePath { get; }
+
+        public void Dispose()
+        {
+            TryDeleteDirectory(TempDir);
+        }
+    }
+
     public static async Task<StagedXrayCoreUpdate> StageXrayCoreUpdateAsync()
     {
         Directory.CreateDirectory(EngineDir);
@@ -120,27 +155,82 @@ public static class CoreUpdateService
         ReplaceFile(update.XrayExePath, XrayExePath);
     }
 
-    public static async Task UpdateGeofilesAsync()
+    public static void StagePendingXrayCoreUpdate(StagedXrayCoreUpdate update)
+    {
+        Directory.CreateDirectory(PendingUpdateDir);
+        var pendingXrayPath = Path.Combine(PendingUpdateDir, "xray.exe");
+        ReplaceFile(update.XrayExePath, pendingXrayPath);
+        var manifest = new PendingXrayUpdateManifest
+        {
+            XrayExePath = pendingXrayPath,
+            CreatedAt = DateTimeOffset.Now
+        };
+        File.WriteAllText(PendingUpdateManifestPath, JsonSerializer.Serialize(manifest, JsonOptions));
+    }
+
+    public static bool TryApplyPendingXrayCoreUpdate()
+    {
+        try
+        {
+            if (!File.Exists(PendingUpdateManifestPath))
+            {
+                return false;
+            }
+
+            var manifest = JsonSerializer.Deserialize<PendingXrayUpdateManifest>(File.ReadAllText(PendingUpdateManifestPath), JsonOptions);
+            if (manifest is null || string.IsNullOrWhiteSpace(manifest.XrayExePath) || !File.Exists(manifest.XrayExePath))
+            {
+                ClearPendingXrayCoreUpdate();
+                return false;
+            }
+
+            Directory.CreateDirectory(EngineDir);
+            ReplaceFile(manifest.XrayExePath, XrayExePath);
+            ClearPendingXrayCoreUpdate();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static async Task<StagedGeofilesUpdate> StageGeofilesUpdateAsync()
     {
         Directory.CreateDirectory(RulesDir);
         var tempDir = Path.Combine(Path.GetTempPath(), "Orayo", "geofiles-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
-        var geoipPath = Path.Combine(RulesDir, "geoip.dat");
-        var geositePath = Path.Combine(RulesDir, "geosite.dat");
         var stagedGeoip = Path.Combine(tempDir, "geoip.dat");
         var stagedGeosite = Path.Combine(tempDir, "geosite.dat");
-        var geoipBackup = geoipPath + "." + Guid.NewGuid().ToString("N") + ".bak";
-        var geositeBackup = geositePath + "." + Guid.NewGuid().ToString("N") + ".bak";
 
         try
         {
             await DownloadFileAsync(GeoipUrl, stagedGeoip);
             await DownloadFileAsync(GeositeUrl, stagedGeosite);
+            return new StagedGeofilesUpdate(tempDir, stagedGeoip, stagedGeosite);
+        }
+        catch
+        {
+            TryDeleteDirectory(tempDir);
+            throw;
+        }
+    }
+
+    public static void ApplyGeofilesUpdate(StagedGeofilesUpdate update)
+    {
+        Directory.CreateDirectory(RulesDir);
+        var geoipPath = Path.Combine(RulesDir, "geoip.dat");
+        var geositePath = Path.Combine(RulesDir, "geosite.dat");
+        var geoipBackup = geoipPath + "." + Guid.NewGuid().ToString("N") + ".bak";
+        var geositeBackup = geositePath + "." + Guid.NewGuid().ToString("N") + ".bak";
+
+        try
+        {
             BackupFile(geoipPath, geoipBackup);
             BackupFile(geositePath, geositeBackup);
-            ReplaceFile(stagedGeoip, geoipPath);
-            ReplaceFile(stagedGeosite, geositePath);
+            ReplaceFile(update.GeoipPath, geoipPath);
+            ReplaceFile(update.GeositePath, geositePath);
         }
         catch
         {
@@ -152,7 +242,6 @@ public static class CoreUpdateService
         {
             TryDeleteFile(geoipBackup);
             TryDeleteFile(geositeBackup);
-            TryDeleteDirectory(tempDir);
         }
     }
 
@@ -237,6 +326,12 @@ public static class CoreUpdateService
         catch
         {
         }
+    }
+
+    private static void ClearPendingXrayCoreUpdate()
+    {
+        TryDeleteFile(PendingUpdateManifestPath);
+        TryDeleteDirectory(PendingUpdateDir);
     }
 }
 

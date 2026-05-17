@@ -553,7 +553,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void MoreButton_Click(object sender, RoutedEventArgs e)
     {
-        var window = new MoreWindow(this, _settings, PrepareForCoreUpdateAsync, () => HasActiveConnection, RestartSelectedServerAsync);
+        var window = new MoreWindow(this, _settings, PrepareForCoreUpdateAsync);
         window.AppWindow.Show();
         window.Activate();
     }

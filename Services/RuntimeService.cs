@@ -59,6 +59,7 @@ public sealed class RuntimeService
             if (settings.IsTunMode)
             {
                 await StopLocalSessionIfNeededAsync();
+                await StopTunSessionIfNeededAsync();
 
                 var portConflict = await PortConflictService.EnsurePortsAvailableForCurrentXrayAsync(settings.LocalSocksPort, settings.LocalHttpPort);
                 if (!string.IsNullOrWhiteSpace(portConflict))

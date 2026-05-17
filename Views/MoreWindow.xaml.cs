@@ -29,8 +29,6 @@ public sealed partial class MoreWindow : Window
 
     private readonly Window _owner;
     private readonly Func<Task> _prepareCoreUpdateAsync;
-    private readonly Func<bool> _shouldRestartConnection;
-    private readonly Func<Task> _restartSelectedServerAsync;
     private readonly AppStore _store = new();
     private readonly AppSettings _settings;
     private bool _isInitializing;
@@ -38,15 +36,11 @@ public sealed partial class MoreWindow : Window
     public MoreWindow(
         Window owner,
         AppSettings settings,
-        Func<Task> prepareCoreUpdateAsync,
-        Func<bool> shouldRestartConnection,
-        Func<Task> restartSelectedServerAsync)
+        Func<Task> prepareCoreUpdateAsync)
     {
         _owner = owner;
-        _settings = settings;
         _prepareCoreUpdateAsync = prepareCoreUpdateAsync;
-        _shouldRestartConnection = shouldRestartConnection;
-        _restartSelectedServerAsync = restartSelectedServerAsync;
+        _settings = settings;
         InitializeComponent();
         WindowThemeHelper.Apply(this);
 
@@ -109,32 +103,23 @@ public sealed partial class MoreWindow : Window
 
     private async void UpdateCoreButton_Click(object sender, RoutedEventArgs e)
     {
-        var shouldRestart = _shouldRestartConnection();
         await RunActionAsync("正在下载 Xray-core", async () =>
         {
             using var update = await CoreUpdateService.StageXrayCoreUpdateAsync();
-            StatusTextBlock.Text = "下载完成，正在替换 Xray-core";
-            await _prepareCoreUpdateAsync();
-            CoreUpdateService.ApplyXrayCoreUpdate(update);
+            StatusTextBlock.Text = "下载完成，正在保存待应用更新";
+            CoreUpdateService.StagePendingXrayCoreUpdate(update);
             await RefreshVersionAsync();
-            if (shouldRestart)
-            {
-                await _restartSelectedServerAsync();
-            }
-        }, "Xray-core 已更新");
+        }, "Xray-core 已下载，将在下次启动应用时生效");
     }
 
     private async void UpdateGeofilesButton_Click(object sender, RoutedEventArgs e)
     {
-        var shouldRestart = _shouldRestartConnection();
         await RunActionAsync("正在更新 Geo 数据文件", async () =>
         {
-            await CoreUpdateService.UpdateGeofilesAsync();
-            if (shouldRestart)
-            {
-                await _restartSelectedServerAsync();
-            }
-        }, "Geo 数据文件已更新");
+            using var update = await CoreUpdateService.StageGeofilesUpdateAsync();
+            StatusTextBlock.Text = "下载完成，正在替换 Geo 数据文件";
+            CoreUpdateService.ApplyGeofilesUpdate(update);
+        }, "Geo 数据文件已更新，新的规则将在下次启动或手动重连后生效");
     }
 
     private async void CheckAppUpdateButton_Click(object sender, RoutedEventArgs e)
