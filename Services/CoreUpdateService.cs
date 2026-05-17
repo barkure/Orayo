@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -70,7 +71,24 @@ public static class CoreUpdateService
         return new XrayVersionInfo(string.IsNullOrWhiteSpace(error) ? "未知版本" : error, string.Empty, null, error);
     }
 
-    public static async Task UpdateXrayCoreAsync()
+    public sealed class StagedXrayCoreUpdate : IDisposable
+    {
+        internal StagedXrayCoreUpdate(string tempDir, string xrayExePath)
+        {
+            TempDir = tempDir;
+            XrayExePath = xrayExePath;
+        }
+
+        internal string TempDir { get; }
+        internal string XrayExePath { get; }
+
+        public void Dispose()
+        {
+            TryDeleteDirectory(TempDir);
+        }
+    }
+
+    public static async Task<StagedXrayCoreUpdate> StageXrayCoreUpdateAsync()
     {
         Directory.CreateDirectory(EngineDir);
         var tempDir = Path.Combine(Path.GetTempPath(), "Orayo", "xray-core-" + Guid.NewGuid().ToString("N"));
@@ -81,13 +99,25 @@ public static class CoreUpdateService
         {
             await DownloadFileAsync(XrayWindows64Url, zipPath);
             ZipFile.ExtractToDirectory(zipPath, tempDir, overwriteFiles: true);
-            var extractedXray = Directory.GetFiles(tempDir, "xray.exe", SearchOption.AllDirectories)[0];
-            ReplaceFile(extractedXray, XrayExePath);
+            var extractedXray = Directory.GetFiles(tempDir, "xray.exe", SearchOption.AllDirectories).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(extractedXray))
+            {
+                throw new InvalidOperationException("Xray 更新包中未找到 xray.exe。");
+            }
+
+            return new StagedXrayCoreUpdate(tempDir, extractedXray);
         }
-        finally
+        catch
         {
             TryDeleteDirectory(tempDir);
+            throw;
         }
+    }
+
+    public static void ApplyXrayCoreUpdate(StagedXrayCoreUpdate update)
+    {
+        Directory.CreateDirectory(EngineDir);
+        ReplaceFile(update.XrayExePath, XrayExePath);
     }
 
     public static async Task UpdateGeofilesAsync()

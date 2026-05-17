@@ -109,10 +109,12 @@ public sealed partial class MoreWindow : Window
     private async void UpdateCoreButton_Click(object sender, RoutedEventArgs e)
     {
         var shouldRestart = _shouldRestartConnection();
-        await RunActionAsync("正在更新 Xray-core", async () =>
+        await RunActionAsync("正在下载 Xray-core", async () =>
         {
+            using var update = await CoreUpdateService.StageXrayCoreUpdateAsync();
+            StatusTextBlock.Text = "下载完成，正在替换 Xray-core";
             await _prepareCoreUpdateAsync();
-            await CoreUpdateService.UpdateXrayCoreAsync();
+            CoreUpdateService.ApplyXrayCoreUpdate(update);
             await RefreshVersionAsync();
             if (shouldRestart)
             {
