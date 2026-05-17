@@ -13,16 +13,29 @@ namespace Orayo;
 public partial class App : Application
 {
     private const string SingleInstanceMutexName = @"Local\Orayo.SingleInstance";
+    private const string BrokerInstanceMutexName = @"Local\Orayo.TunBroker";
     private const string ShowWindowEventName = @"Local\Orayo.ShowWindow";
+    private const string BrokerArgument = "--broker";
     private static Mutex? _singleInstanceMutex;
     private static EventWaitHandle? _showWindowEvent;
+    private readonly RuntimeService _runtime = new();
+    private readonly bool _isBrokerMode;
     private MainWindow? _window;
     private Forms.NotifyIcon? _trayIcon;
+    private bool _isExiting;
 
     public App()
     {
         VelopackApp.Build().Run();
-        if (!TryClaimSingleInstance())
+        var cmdArgs = Environment.GetCommandLineArgs();
+        _isBrokerMode = Array.Exists(cmdArgs, arg => string.Equals(arg, BrokerArgument, StringComparison.OrdinalIgnoreCase));
+        if (_isBrokerMode && !TryClaimSingleInstance(BrokerInstanceMutexName))
+        {
+            Environment.Exit(0);
+            return;
+        }
+
+        if (!_isBrokerMode && !TryClaimSingleInstance(SingleInstanceMutexName))
         {
             SignalExistingInstance();
             Environment.Exit(0);
@@ -50,32 +63,64 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        var cmdArgs = Environment.GetCommandLineArgs();
-        var isTunLaunch = Array.Exists(cmdArgs, arg => string.Equals(arg, "--tun", StringComparison.OrdinalIgnoreCase));
-
-        var window = new MainWindow();
-        if (isTunLaunch)
+        if (_isBrokerMode)
         {
-            window.SetTunEnabledSilently(true);
+            var broker = new TunBrokerHost();
+            Task.Run(() => broker.RunAsync()).GetAwaiter().GetResult();
+            Environment.Exit(0);
+            return;
         }
+
+        var cmdArgs = Environment.GetCommandLineArgs();
+        var isAutoStartLaunch = Array.Exists(cmdArgs, arg => string.Equals(arg, "--autostart", StringComparison.OrdinalIgnoreCase));
+        var window = new MainWindow(_runtime);
 
         _window = window;
         InitializeTrayIcon();
         StartShowWindowListener();
-        _window.Activate();
+        if (!isAutoStartLaunch)
+        {
+            _window.Activate();
+        }
+
+        _ = _window.StartAsync();
     }
 
-    public void RequestShutdown(bool fastShutdown = false)
+    public async Task RequestShutdownAsync(bool fastShutdown = false)
     {
-        CleanupOnExit(fastShutdown);
+        if (_isExiting)
+        {
+            return;
+        }
+
+        _isExiting = true;
+        if (_window is not null)
+        {
+            await _window.PersistStateForShutdownAsync();
+        }
+
+        _window?.HideForShutdown();
+        await CleanupOnExitAsync(fastShutdown);
         DisposeTrayIcon();
         ReleaseSingleInstance();
         Environment.Exit(0);
     }
 
-    public void PrepareForRestart(bool fastShutdown = true)
+    public async Task PrepareForRestartAsync(bool fastShutdown = true)
     {
-        CleanupOnExit(fastShutdown);
+        if (_isExiting)
+        {
+            return;
+        }
+
+        _isExiting = true;
+        if (_window is not null)
+        {
+            await _window.PersistStateForShutdownAsync();
+        }
+
+        _window?.HideForShutdown();
+        await CleanupOnExitAsync(fastShutdown);
         DisposeTrayIcon();
         ReleaseSingleInstance();
     }
@@ -89,7 +134,7 @@ public partial class App : Application
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("显示 Orayo", null, (_, _) => ShowMainWindow());
         menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add("退出", null, (_, _) => RequestShutdown());
+        menu.Items.Add("退出", null, async (_, _) => await RequestShutdownAsync());
 
         _trayIcon = new Forms.NotifyIcon
         {
@@ -103,14 +148,25 @@ public partial class App : Application
 
     private void ShowMainWindow()
     {
-        _window?.ShowFromTray();
+        if (_isExiting)
+        {
+            return;
+        }
+
+        try
+        {
+            _window?.ShowFromTray();
+        }
+        catch
+        {
+        }
     }
 
-    private static bool TryClaimSingleInstance()
+    private static bool TryClaimSingleInstance(string mutexName)
     {
         try
         {
-            _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out var createdNew);
+            _singleInstanceMutex = new Mutex(initiallyOwned: true, mutexName, out var createdNew);
             return createdNew;
         }
         catch (UnauthorizedAccessException)
@@ -133,7 +189,8 @@ public partial class App : Application
 
     private void StartShowWindowListener()
     {
-        _showWindowEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowWindowEventName);
+        var showWindowEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowWindowEventName);
+        _showWindowEvent = showWindowEvent;
         var dispatcher = _window?.DispatcherQueue;
         if (dispatcher is null)
         {
@@ -144,8 +201,13 @@ public partial class App : Application
         {
             try
             {
-                while (_showWindowEvent.WaitOne())
+                while (showWindowEvent.WaitOne())
                 {
+                    if (_isExiting)
+                    {
+                        break;
+                    }
+
                     dispatcher.TryEnqueue(ShowMainWindow);
                 }
             }
@@ -167,22 +229,18 @@ public partial class App : Application
         _trayIcon = null;
     }
 
-    private void CleanupOnExit(bool fastShutdown = false)
+    private async Task CleanupOnExitAsync(bool fastShutdown = false)
     {
-        SystemProxyService.ClearProxy();
-
-        if (_window is MainWindow mainWindow)
-        {
-            mainWindow.StopBackgroundServicesOnExit(fastShutdown);
-        }
+        await _runtime.StopForShutdownAsync();
     }
 
     private static void ReleaseSingleInstance()
     {
         try
         {
-            _showWindowEvent?.Set();
-            _showWindowEvent?.Dispose();
+            var showWindowEvent = _showWindowEvent;
+            showWindowEvent?.Set();
+            showWindowEvent?.Dispose();
             _showWindowEvent = null;
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();
@@ -192,4 +250,5 @@ public partial class App : Application
         {
         }
     }
+
 }

@@ -17,15 +17,16 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
+using Forms = System.Windows.Forms;
 
 namespace Orayo;
 
 public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
     private readonly AppStore _store = new();
-    private readonly XrayService _xray = new();
-    private readonly TunService _tunService = new();
+    private readonly RuntimeService _runtime;
     private AppSettings _settings = new();
+    private AppRuntimeState _runtimeState = new();
     private ServerEntry? _selectedServer;
     private ServerEntry? _activeServer;
     private bool _isRunning;
@@ -34,9 +35,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private bool _isSystemProxyEnabled = true;
     private bool _isTunInternalUpdate;
     private bool _isApplyingSelection;
+    private bool _isStateDirty;
     private string _routingModeText = "规则路由";
-    private string? _currentTunServerHost;
-    private bool? _pendingTunLaunchState;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -115,7 +115,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         get
         {
-            var ruleCount = RouteRulePresetService.CountRules(_settings.RoutingRuleJson, _settings.CustomRules);
+            var ruleCount = RouteRulePresetService.CountRules(_settings.RoutingRuleJson);
             var ruleText = ruleCount > 0 ? $"，规则 {ruleCount} 条" : string.Empty;
             return IsTunMode
                 ? $"当前：TUN + {RoutingModeText}{ruleText}。系统代理设置在 TUN 模式下不生效。"
@@ -135,8 +135,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    public MainWindow()
+    public MainWindow(RuntimeService runtime)
     {
+        _runtime = runtime;
         InitializeComponent();
         WindowThemeHelper.Apply(this);
         AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
@@ -145,9 +146,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         AppWindow.Resize(new SizeInt32(1300, 815));
         WindowMinSizeHelper.Apply(this, 1300, 815);
         AppWindow.Closing += OnAppWindowClosing;
-        Closed += OnClosed;
-        _xray.RunningChanged += Xray_RunningChanged;
-        _ = InitializeAsync();
+        _runtime.StateChanged += Runtime_StateChanged;
+    }
+
+    public Task StartAsync()
+    {
+        return InitializeAsync();
     }
 
 
@@ -160,44 +164,40 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    public void SetTunEnabledSilently(bool value)
-    {
-        _pendingTunLaunchState = value;
-    }
-
     public void ShowFromTray()
     {
         AppWindow.Show();
         Activate();
     }
 
+    public void HideForShutdown()
+    {
+        AppWindow.Hide();
+    }
+
+    public async Task PersistStateForShutdownAsync()
+    {
+        _settings.IsTunMode = IsTunMode;
+        _settings.IsSystemProxyEnabled = IsSystemProxyEnabled;
+        if (_isStateDirty)
+        {
+            await SaveStateSafelyAsync();
+            _isStateDirty = false;
+        }
+    }
+
 
     public async Task PrepareForCoreUpdateAsync()
     {
-        await _xray.StopAsync();
-        SystemProxyService.ClearProxy();
-        CleanupTunRoutesSafely();
-        SetActiveServer(null);
-        IsRunning = false;
-    }
-    public void StopBackgroundServicesOnExit(bool fastShutdown = false)
-    {
-        _xray.RunningChanged -= Xray_RunningChanged;
-        SystemProxyService.ClearProxy();
-
-        if (IsTunMode)
-        {
-            CleanupTunRoutesSafely();
-        }
-
-        _xray.StopForShutdown();
+        await _runtime.PrepareForCoreUpdateAsync();
     }
 
     private async Task InitializeAsync()
     {
         _isInitializing = true;
         _settings = await _store.LoadSettingsAsync();
-        _settings.RoutingRuleJson = RouteRulePresetService.EnsureRoutingJson(_settings.RoutingRuleJson, _settings.CustomRules);
+        _runtimeState = await _store.LoadRuntimeStateAsync();
+        _settings.RoutingRuleJson = RouteRulePresetService.EnsureRoutingJson(_settings.RoutingRuleJson);
         _settings.DnsJson = DnsPresetService.EnsureDnsJson(_settings.DnsJson);
         EnsureDefaultLocalPorts();
 
@@ -205,11 +205,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             server.IsActive = false;
             Servers.Add(server);
-        }
-
-        if (_pendingTunLaunchState.HasValue)
-        {
-            _settings.IsTunMode = _pendingTunLaunchState.Value;
         }
 
         _isTunInternalUpdate = true;
@@ -222,8 +217,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         HttpPortTextBox.Text = _settings.LocalHttpPort.ToString();
         SelectedServer = ResolveInitialSelection();
         _isInitializing = false;
-
-        await SaveSettingsSafelyAsync();
 
         OnPropertyChanged(nameof(IsEmptyHintVisible));
         OnPropertyChanged(nameof(RouteSettingsSummary));
@@ -257,9 +250,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return null;
         }
 
-        if (!string.IsNullOrWhiteSpace(_settings.LastSelectedServerId))
+        if (!string.IsNullOrWhiteSpace(_runtimeState.LastSelectedServerId))
         {
-            var matched = Servers.FirstOrDefault(x => x.Id == _settings.LastSelectedServerId);
+            var matched = Servers.FirstOrDefault(x => x.Id == _runtimeState.LastSelectedServerId);
             if (matched is not null)
             {
                 return matched;
@@ -276,7 +269,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        if (!forceRestart && _activeServer is not null && _activeServer.Id == SelectedServer.Id && IsRunning)
+        if (!forceRestart && _runtime.ActiveServer is not null && _runtime.ActiveServer.Id == SelectedServer.Id && _runtime.IsRunning)
         {
             return;
         }
@@ -303,6 +296,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (wantEnable && !await EnsureTunCanStartAsync())
         {
+            _isTunInternalUpdate = true;
+            IsTunMode = _settings.IsTunMode;
+            _isTunInternalUpdate = false;
+            await ShowTunErrorAsync(string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError) ? "无法启动 TUN 权限代理。" : _runtime.TunBrokerLastError);
             return;
         }
 
@@ -315,128 +312,44 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private static void RestartAsAdmin(string arguments)
-    {
-        try
-        {
-            var exePath = Process.GetCurrentProcess().MainModule?.FileName;
-            if (string.IsNullOrWhiteSpace(exePath))
-            {
-                return;
-            }
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = exePath,
-                Arguments = arguments,
-                UseShellExecute = true,
-                Verb = "runas"
-            });
-
-            if (Application.Current is App app)
-            {
-                app.RequestShutdown(fastShutdown: true);
-            }
-            else
-            {
-                Environment.Exit(0);
-            }
-        }
-        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
-        {
-        }
-        catch
-        {
-        }
-    }
-
     private async Task ConnectServerAsync(ServerEntry server)
     {
         if (IsTunMode && !await EnsureTunCanStartAsync())
         {
+            await ShowTunErrorAsync(string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError) ? "无法启动 TUN 权限代理。" : _runtime.TunBrokerLastError);
             return;
         }
 
-        var portConflict = await PortConflictService.EnsurePortsAvailableForCurrentXrayAsync(_settings.LocalSocksPort, _settings.LocalHttpPort);
-        if (!string.IsNullOrWhiteSpace(portConflict))
+        var result = await _runtime.ConnectAsync(server, _settings, _runtimeState);
+        if (!result.Success)
         {
-            await ShowMessageAsync("连接失败", portConflict);
-            return;
-        }
-
-        string? tunOutboundInterfaceName = null;
-        if (IsTunMode)
-        {
-            tunOutboundInterfaceName = await RunTunPreflightAsync();
-            if (tunOutboundInterfaceName is null)
+            MarkStateDirty();
+            if (string.Equals(result.ErrorTitle, "TUN 模式错误", StringComparison.Ordinal))
             {
-                return;
-            }
-
-            await CleanupPersistedTunRoutesAsync();
-        }
-
-        var config = XrayConfigBuilder.Build(server, _settings, tunOutboundInterfaceName);
-        var ok = await _xray.StartAsync(config);
-        if (!ok)
-        {
-            if (IsTunMode)
-            {
-                CleanupTunRoutesSafely();
-            }
-
-            SystemProxyService.ClearProxy();
-            SetActiveServer(null);
-            IsRunning = false;
-            await ShowMessageAsync("连接失败", string.IsNullOrWhiteSpace(_xray.LastError) ? "xray 启动失败。" : _xray.LastError);
-            return;
-        }
-
-        _settings.LastSelectedServerId = server.Id;
-        if (IsTunMode)
-        {
-            _currentTunServerHost = server.Host;
-            _settings.LastTunServerHost = server.Host;
-            SystemProxyService.ClearProxy();
-        }
-        else
-        {
-            _settings.LastTunServerHost = null;
-            if (IsSystemProxyEnabled)
-            {
-                SystemProxyService.SetProxy("127.0.0.1", _settings.LocalHttpPort);
+                await ShowTunErrorAsync(result.ErrorMessage ?? "连接失败。");
             }
             else
             {
-                SystemProxyService.ClearProxy();
+                await ShowMessageAsync(result.ErrorTitle ?? "连接失败", result.ErrorMessage ?? "连接失败。");
             }
+            return;
         }
 
-        await SaveSettingsSafelyAsync();
-        SetActiveServer(server);
-        IsRunning = true;
+        MarkStateDirty();
     }
 
     private async Task<bool> EnsureTunCanStartAsync()
     {
-        if (!IsTunMode || AdminHelper.IsAdministrator())
+        if (!IsTunMode)
         {
             return true;
         }
 
-        _isTunInternalUpdate = true;
-        IsTunMode = false;
-        _isTunInternalUpdate = false;
-
-        var confirmed = await ConfirmAsync("开启 TUN 模式", "TUN 模式需要管理员权限，程序将以管理员身份重启。是否继续？");
-        if (confirmed)
+        if (await _runtime.EnsureTunBrokerAvailableAsync())
         {
-            RestartAsAdmin("--tun");
-            return false;
+            return true;
         }
 
-        _settings.IsTunMode = false;
-        await SaveSettingsSafelyAsync();
         return false;
     }
 
@@ -564,7 +477,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         if (!isSocksPort && !IsTunMode && IsSystemProxyEnabled)
         {
-            SystemProxyService.SetProxy("127.0.0.1", _settings.LocalHttpPort);
+            _runtime.ApplySystemProxy(_settings);
         }
 
         if (SelectedServer is not null)
@@ -586,14 +499,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         if (!IsTunMode)
         {
-            if (IsSystemProxyEnabled)
-            {
-                SystemProxyService.SetProxy("127.0.0.1", _settings.LocalHttpPort);
-            }
-            else
-            {
-                SystemProxyService.ClearProxy();
-            }
+            _runtime.ApplySystemProxy(_settings);
         }
     }
 
@@ -651,61 +557,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (SelectedServer is not null)
         {
             await EnsureSelectedServerAppliedAsync(forceRestart: true);
-        }
-    }
-
-    private async Task<string?> RunTunPreflightAsync()
-    {
-        if (!_tunService.IsWintunAvailable())
-        {
-            await ShowMessageAsync("TUN 模式错误", $"找不到 wintun.dll\n路径：{_tunService.GetExpectedWintunPath()}");
-            return null;
-        }
-
-        var iface = _tunService.DetectDefaultOutboundInterfaceName();
-        if (string.IsNullOrWhiteSpace(iface))
-        {
-            await ShowMessageAsync("TUN 模式错误", "无法确定默认出站网卡，请确认 Wi-Fi 或以太网已连接。");
-            return null;
-        }
-
-        SystemProxyService.ClearProxy();
-        return iface;
-    }
-
-    private async Task CleanupPersistedTunRoutesAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_settings.LastTunServerHost))
-        {
-            return;
-        }
-
-        CleanupTunRoutesSafely();
-        _settings.LastTunServerHost = null;
-        await SaveSettingsSafelyAsync();
-    }
-
-    private void CleanupTunRoutesSafely()
-    {
-        var serverHost = !string.IsNullOrWhiteSpace(_currentTunServerHost)
-            ? _currentTunServerHost
-            : _settings.LastTunServerHost;
-
-        if (string.IsNullOrWhiteSpace(serverHost))
-        {
-            return;
-        }
-
-        try
-        {
-            _tunService.CleanupTunRoutes(serverHost);
-        }
-        catch
-        {
-        }
-        finally
-        {
-            _currentTunServerHost = null;
         }
     }
 
@@ -840,10 +691,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _isApplyingSelection = false;
         }
 
-        if (_settings.LastSelectedServerId == server.Id)
+        if (_runtimeState.LastSelectedServerId == server.Id)
         {
-            _settings.LastSelectedServerId = SelectedServer?.Id ?? string.Empty;
-            await SaveSettingsSafelyAsync();
+            _runtimeState.LastSelectedServerId = SelectedServer?.Id ?? string.Empty;
+            MarkStateDirty();
         }
 
         await _store.SaveServersAsync(Servers);
@@ -880,26 +731,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         await ShowShareFallbackAsync(server.Name, link);
     }
 
-    private void Xray_RunningChanged(object? sender, bool running)
+    private void Runtime_StateChanged(object? sender, EventArgs e)
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (running)
-            {
-                return;
-            }
-
-            if (IsTunMode && !_isApplyingSelection)
-            {
-                CleanupTunRoutesSafely();
-            }
-
-            if (!_isApplyingSelection)
-            {
-                SystemProxyService.ClearProxy();
-                SetActiveServer(null);
-                IsRunning = false;
-            }
+            SetActiveServer(_runtime.ActiveServer);
+            IsRunning = _runtime.IsRunning;
         });
     }
 
@@ -927,8 +764,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        _settings.LastSelectedServerId = SelectedServer?.Id ?? string.Empty;
-        _ = SaveSettingsSafelyAsync();
+        _runtimeState.LastSelectedServerId = SelectedServer?.Id ?? string.Empty;
+        MarkStateDirty();
+    }
+
+    private void MarkStateDirty()
+    {
+        _isStateDirty = true;
     }
 
     private async Task SaveSettingsSafelyAsync()
@@ -940,6 +782,23 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         catch
         {
         }
+    }
+
+    private async Task SaveRuntimeStateSafelyAsync()
+    {
+        try
+        {
+            await _store.SaveRuntimeStateAsync(_runtimeState);
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task SaveStateSafelyAsync()
+    {
+        await SaveSettingsSafelyAsync();
+        await SaveRuntimeStateSafelyAsync();
     }
 
 
@@ -1017,6 +876,24 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         await dialog.ShowAsync();
     }
 
+    private Task ShowTunErrorAsync(string message)
+    {
+        return Task.Run(() =>
+        {
+            try
+            {
+                Forms.MessageBox.Show(
+                    message,
+                    "TUN 模式错误",
+                    Forms.MessageBoxButtons.OK,
+                    Forms.MessageBoxIcon.Error);
+            }
+            catch
+            {
+            }
+        });
+    }
+
     private async Task<bool> ConfirmAsync(string title, string message)
     {
         var dialog = new ContentDialog
@@ -1034,11 +911,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         args.Cancel = true;
         AppWindow.Hide();
-    }
-
-    private void OnClosed(object sender, WindowEventArgs args)
-    {
-        StopBackgroundServicesOnExit();
     }
 
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

@@ -55,6 +55,21 @@ public class TunService
         }
     }
 
+    public bool IsTunInterfaceActive()
+    {
+        try
+        {
+            return NetworkInterface.GetAllNetworkInterfaces()
+                .Any(nic =>
+                    string.Equals(nic.Name, DefaultTunInterfaceName, StringComparison.OrdinalIgnoreCase)
+                    && nic.OperationalStatus == OperationalStatus.Up);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public void CleanupTunRoutes(string? serverAddress)
     {
         try

@@ -24,6 +24,7 @@ public class AppStore
 
     private string ServersFile => Path.Combine(_dataDir, "servers.json");
     private string SettingsFile => Path.Combine(_dataDir, "settings.json");
+    private string RuntimeStateFile => Path.Combine(_dataDir, "runtime_state.json");
 
     public AppStore()
     {
@@ -50,6 +51,17 @@ public class AppStore
     {
         var json = JsonSerializer.Serialize(settings, JsonOptions);
         return SaveJsonWithBackupAsync(SettingsFile, json);
+    }
+
+    public async Task<AppRuntimeState> LoadRuntimeStateAsync()
+    {
+        return await LoadJsonWithBackupAsync(RuntimeStateFile, static () => new AppRuntimeState()).ConfigureAwait(false);
+    }
+
+    public Task SaveRuntimeStateAsync(AppRuntimeState runtimeState)
+    {
+        var json = JsonSerializer.Serialize(runtimeState, JsonOptions);
+        return SaveJsonWithBackupAsync(RuntimeStateFile, json);
     }
 
     private static async Task<T> LoadJsonWithBackupAsync<T>(string path, Func<T> fallback)

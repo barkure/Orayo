@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
-using Orayo.Models;
-
 namespace Orayo.Services;
 
 public static class RouteRulePresetService
@@ -19,29 +17,7 @@ public static class RouteRulePresetService
 
     public static string CreateDefaultRoutingBodyJson() => ExtractRoutingBody(CreateDefaultRoutingObject().ToJsonString(JsonOptions));
 
-    public static List<CustomRoutingRule> CreateDefaultRules()
-    {
-        var routing = CreateDefaultRoutingObject();
-        return ConvertRoutingObjectToLegacyRules(routing);
-    }
-
-    public static List<CustomRoutingRule> EnsureRules(IEnumerable<CustomRoutingRule>? rules)
-    {
-        if (rules is null)
-        {
-            return CreateDefaultRules();
-        }
-
-        var list = new List<CustomRoutingRule>();
-        foreach (var rule in rules)
-        {
-            list.Add(rule.Clone());
-        }
-
-        return list.Count > 0 ? list : CreateDefaultRules();
-    }
-
-    public static string EnsureRoutingJson(string? routingJson, IEnumerable<CustomRoutingRule>? legacyRules = null)
+    public static string EnsureRoutingJson(string? routingJson)
     {
         if (!string.IsNullOrWhiteSpace(routingJson))
         {
@@ -54,21 +30,12 @@ public static class RouteRulePresetService
             }
         }
 
-        if (legacyRules is not null)
-        {
-            var migrated = TryConvertLegacyRules(legacyRules);
-            if (migrated is not null)
-            {
-                return migrated.ToJsonString(JsonOptions);
-            }
-        }
-
         return CreateDefaultRoutingJson();
     }
 
-    public static string EnsureRoutingBodyJson(string? routingJson, IEnumerable<CustomRoutingRule>? legacyRules = null)
+    public static string EnsureRoutingBodyJson(string? routingJson)
     {
-        return ExtractRoutingBody(EnsureRoutingJson(routingJson, legacyRules));
+        return ExtractRoutingBody(EnsureRoutingJson(routingJson));
     }
 
     public static string FormatRoutingJson(string json)
@@ -86,17 +53,17 @@ public static class RouteRulePresetService
         return ParseRoutingBodyToObject(json).ToJsonString(JsonOptions);
     }
 
-    public static int CountRules(string? routingJson, IEnumerable<CustomRoutingRule>? legacyRules = null)
+    public static int CountRules(string? routingJson)
     {
-        var routing = EnsureRoutingObject(routingJson, legacyRules);
+        var routing = EnsureRoutingObject(routingJson);
         return routing["rules"] is JsonArray rules ? rules.Count : 0;
     }
 
-    public static JsonObject EnsureRoutingObject(string? routingJson, IEnumerable<CustomRoutingRule>? legacyRules = null)
+    public static JsonObject EnsureRoutingObject(string? routingJson)
     {
         try
         {
-            return ParseRoutingObject(EnsureRoutingJson(routingJson, legacyRules));
+            return ParseRoutingObject(EnsureRoutingJson(routingJson));
         }
         catch
         {
@@ -220,134 +187,6 @@ public static class RouteRulePresetService
                     ["network"] = "tcp,udp"
                 }
             }
-        };
-    }
-
-    private static List<CustomRoutingRule> ConvertRoutingObjectToLegacyRules(JsonObject routing)
-    {
-        var list = new List<CustomRoutingRule>();
-        if (routing["rules"] is not JsonArray rules)
-        {
-            return list;
-        }
-
-        var index = 1;
-        foreach (var node in rules)
-        {
-            if (node is not JsonObject rule)
-            {
-                continue;
-            }
-
-            var outboundTag = rule["outboundTag"]?.GetValue<string>() ?? "proxy";
-            if (rule["domain"] is JsonArray domains && domains.Count > 0)
-            {
-                foreach (var domain in domains)
-                {
-                    list.Add(new CustomRoutingRule
-                    {
-                        Name = $"规则 {index++}",
-                        Type = "domain",
-                        Match = domain?.GetValue<string>() ?? string.Empty,
-                        OutboundTag = outboundTag,
-                        IsEnabled = true,
-                    });
-                }
-            }
-            else if (rule["ip"] is JsonArray ips && ips.Count > 0)
-            {
-                foreach (var ip in ips)
-                {
-                    list.Add(new CustomRoutingRule
-                    {
-                        Name = $"规则 {index++}",
-                        Type = "ip",
-                        Match = ip?.GetValue<string>() ?? string.Empty,
-                        OutboundTag = outboundTag,
-                        IsEnabled = true,
-                    });
-                }
-            }
-            else if (rule["process"] is JsonArray processes && processes.Count > 0)
-            {
-                foreach (var process in processes)
-                {
-                    list.Add(new CustomRoutingRule
-                    {
-                        Name = $"规则 {index++}",
-                        Type = "process",
-                        Match = process?.GetValue<string>() ?? string.Empty,
-                        OutboundTag = outboundTag,
-                        IsEnabled = true,
-                    });
-                }
-            }
-        }
-
-        return list;
-    }
-
-    private static JsonObject? TryConvertLegacyRules(IEnumerable<CustomRoutingRule> legacyRules)
-    {
-        var rules = new JsonArray();
-        foreach (var legacy in legacyRules)
-        {
-            if (string.IsNullOrWhiteSpace(legacy.Match))
-            {
-                continue;
-            }
-
-            var rule = new JsonObject
-            {
-                ["type"] = "field",
-                ["outboundTag"] = string.IsNullOrWhiteSpace(legacy.OutboundTag) ? "proxy" : legacy.OutboundTag
-            };
-
-            switch (legacy.Type?.Trim().ToLowerInvariant())
-            {
-                case "ip":
-                    rule["ip"] = new JsonArray(legacy.Match);
-                    break;
-                case "process":
-                    rule["process"] = new JsonArray(legacy.Match);
-                    break;
-                default:
-                    rule["domain"] = new JsonArray(legacy.Match);
-                    break;
-            }
-
-            rules.Add(rule);
-        }
-
-        if (rules.Count == 0)
-        {
-            return null;
-        }
-
-        var hasProxyFallback = false;
-        foreach (var node in rules)
-        {
-            if (node is JsonObject rule && string.Equals(rule["network"]?.GetValue<string>(), "tcp,udp", StringComparison.OrdinalIgnoreCase))
-            {
-                hasProxyFallback = true;
-                break;
-            }
-        }
-
-        if (!hasProxyFallback)
-        {
-            rules.Add(new JsonObject
-            {
-                ["type"] = "field",
-                ["outboundTag"] = "proxy",
-                ["network"] = "tcp,udp"
-            });
-        }
-
-        return new JsonObject
-        {
-            ["domainStrategy"] = "IPIfNonMatch",
-            ["rules"] = rules
         };
     }
 }

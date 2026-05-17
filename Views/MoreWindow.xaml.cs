@@ -178,7 +178,7 @@ public sealed partial class MoreWindow : Window
             await _prepareCoreUpdateAsync();
             if (Application.Current is App app)
             {
-                app.PrepareForRestart();
+                await app.PrepareForRestartAsync();
             }
 
             manager.ApplyUpdatesAndRestart(update.TargetFullRelease, Array.Empty<string>());
@@ -235,7 +235,7 @@ public sealed partial class MoreWindow : Window
             _settings.IsAutoStartEnabled = previousValue;
             AutoStartToggleButton.IsChecked = previousValue;
             UpdateAutoStartButtonText();
-            StatusTextBlock.Text = "开机自启需要管理员权限。";
+            StatusTextBlock.Text = "写入开机自启失败。";
             return;
         }
 

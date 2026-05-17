@@ -232,7 +232,7 @@ public static class XrayConfigBuilder
             };
         }
 
-        var routing = RouteRulePresetService.EnsureRoutingObject(settings.RoutingRuleJson, settings.CustomRules);
+        var routing = RouteRulePresetService.EnsureRoutingObject(settings.RoutingRuleJson);
         var mergedRules = new JsonArray();
         foreach (var rule in tunRules)
         {
