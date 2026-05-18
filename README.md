@@ -1,19 +1,10 @@
 # Orayo
 
-<table>
-  <tr>
-    <td valign="middle">
-      <img alt="Orayo icon" src="./docs/assets/banner-icon.png" height="100">
-    </td>
-    <td valign="middle">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/banner-name-dark.svg">
-        <source media="(prefers-color-scheme: light)" srcset="./docs/assets/banner-name-light.svg">
-        <img alt="Orayo" src="./docs/assets/banner-name-light.svg" height="64">
-      </picture>
-    </td>
-  </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/banner-dark.webp">
+  <source media="(prefers-color-scheme: light)" srcset="./docs/assets/banner-light.webp">
+  <img alt="Orayo banner" src="./docs/assets/banner-light.webp" width="250">
+</picture>
 
 Orayo is a modern Windows Xray client built with WinUI 3.
 
