@@ -36,7 +36,7 @@ Coming soon
 
 ### Release Packages
 
-[Latest Release](https://github.com/barkure/Orayo/releases/latest) with Setup for standard installation and Portable for running without installation.
+[Latest Release](https://github.com/barkure/Orayo/releases/latest): Setup (requires installation) and Portable (run directly, no installation needed).
 
 ## Build Instructions
 
