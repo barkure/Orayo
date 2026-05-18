@@ -36,8 +36,7 @@ Coming soon
 
 ### Release Packages
 
-- [Installer](https://github.com/barkure/Orayo/releases/latest) - Setup package for standard installation
-- [Portable](https://github.com/barkure/Orayo/releases/latest) - Zip package for running without installation
+[Latest Release](https://github.com/barkure/Orayo/releases/latest) with Setup for standard installation and Portable for running without installation.
 
 ## Build Instructions
 
