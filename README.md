@@ -19,12 +19,12 @@ Orayo is a modern Windows Xray client built with WinUI 3.
 ## Screenshots
 <table>
   <tr>
-	<td><img src="docs/assets/screenshot-1.png" /></td>
-	<td><img src="docs/assets/screenshot-2.png" /></td>
+	<td><img src="docs/assets/screenshot-01.png" /></td>
+	<td><img src="docs/assets/screenshot-02.png" /></td>
   </tr>
   <tr>
-	<td><img src="docs/assets/screenshot-3.png" /></td>
-	<td><img src="docs/assets/screenshot-4.png" /></td>
+	<td><img src="docs/assets/screenshot-03.png" /></td>
+	<td><img src="docs/assets/screenshot-04.png" /></td>
   </tr>
 </table>
 
