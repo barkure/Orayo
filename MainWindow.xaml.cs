@@ -171,7 +171,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SetWindowIcon()
     {
-        var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+        var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "icons", "AppIcon.ico");
         if (System.IO.File.Exists(iconPath))
         {
             AppWindow.SetIcon(iconPath);

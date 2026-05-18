@@ -127,7 +127,7 @@ public partial class App : Application
     {
         DisposeTrayIcon();
 
-        var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+        var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "icons", "AppIcon.ico");
         var icon = System.IO.File.Exists(iconPath) ? new Icon(iconPath) : SystemIcons.Application;
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("显示 Orayo", null, (_, _) => ShowMainWindow());

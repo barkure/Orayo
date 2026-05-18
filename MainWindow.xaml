@@ -16,9 +16,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid x:Name="TitleBarGrid" Margin="-20,-20,-8,0" Padding="20,12,20,12" Background="Transparent">
-            <TextBlock Text="Orayo" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
-        </Grid>
+        <Grid x:Name="TitleBarGrid" Margin="-20,-20,-8,0" Padding="20,12,20,12" Background="Transparent" />
 
         <Grid Grid.Row="1" ColumnSpacing="12" Margin="0,0,12,0">
             <Grid.ColumnDefinitions>
@@ -28,6 +26,17 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="4,0,0,0">
+                <Image Width="40" Height="40" Stretch="Uniform">
+                    <Image.Source>
+                        <BitmapImage UriSource="ms-appx:///Assets/icons/AppIcon.png" />
+                    </Image.Source>
+                </Image>
+                <TextBlock Text="Orayo"
+                           FontFamily="ms-appx:///Assets/fonts/MomoTrustDisplay-Regular.ttf#Momo Trust Display"
+                           FontSize="34"
+                           VerticalAlignment="Center" />
+            </StackPanel>
             <Button Grid.Column="1" Content="DNS 设置" Click="DnsSettingsButton_Click" />
             <Button Grid.Column="2" Content="路由设置" Click="RouteRulesButton_Click" />
             <Button Grid.Column="3" Width="36" Height="32" Padding="0" Click="MoreButton_Click">

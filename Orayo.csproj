@@ -8,7 +8,7 @@
     <Product>Orayo</Product>
     <Title>Orayo</Title>
     <Description>Orayo</Description>
-    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\icons\AppIcon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
@@ -35,10 +35,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Assets\AppIcon.ico">
+    <None Include="Assets\icons\AppIcon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Assets\AppIcon.png">
+    <None Include="Assets\icons\AppIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Assets\fonts\MomoTrustDisplay-Regular.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Remove="Assets\editor\monaco\**" />
