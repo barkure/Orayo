@@ -12,6 +12,7 @@ using Orayo.Helpers;
 using Orayo.Services;
 using Orayo.Models;
 using Velopack;
+using Velopack.Sources;
 
 namespace Orayo.Views;
 
@@ -19,7 +20,6 @@ public sealed partial class MoreWindow : Window
 {
     private const int GWL_HWNDPARENT = -8;
     private const string UpdateRepositoryUrl = "https://github.com/barkure/Orayo";
-    private const string UpdateDownloadUrl = UpdateRepositoryUrl + "/releases/latest/download";
     private const string LoopbackUtilityRelativePath = "Assets\\tools\\enableloopbackutility.exe";
     private const int DefaultWidth = 900;
     private const int DefaultHeight = 980;
@@ -263,9 +263,13 @@ public sealed partial class MoreWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
-    private static UpdateManager CreateUpdateManager()
+    private UpdateManager CreateUpdateManager()
     {
-        return new UpdateManager(UpdateDownloadUrl);
+        var downloader = new OrayoUpdateFileDownloader(
+            _settings.IsSystemProxyEnabled && !_settings.IsTunMode,
+            _settings.LocalHttpPort);
+        var source = new GithubSource(UpdateRepositoryUrl, string.Empty, false, downloader);
+        return new UpdateManager(source);
     }
 
     private static string ThisAssemblyVersion()

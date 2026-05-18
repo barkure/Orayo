@@ -109,7 +109,7 @@ jobs:
             --packDir artifacts/publish `
             --mainExe Orayo.exe `
             --runtime $env:RUNTIME_ID `
-            --icon Assets/AppIcon.ico `
+            --icon Assets/icons/AppIcon.ico `
             --outputDir artifacts/velopack
 
           vpk upload github `
