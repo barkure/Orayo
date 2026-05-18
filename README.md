@@ -28,7 +28,18 @@ Orayo is a modern Windows Xray client built with WinUI 3.
   </tr>
 </table>
 
-## Build
+## Installation
+
+### WinGet
+
+Coming soon
+
+### Release Packages
+
+- [Installer](https://github.com/barkure/Orayo/releases/latest) - Setup package for standard installation
+- [Portable](https://github.com/barkure/Orayo/releases/latest) - Zip package for running without installation
+
+## Build Instructions
 
 Requires .NET 8 SDK and Windows 10 1809 or later. Windows 10 2004 or later is recommended.
 
