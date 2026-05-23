@@ -32,7 +32,9 @@ Orayo is a modern Windows Xray client built with WinUI 3.
 
 ### WinGet
 
-Coming soon
+```bash
+winget install barkure.Orayo
+```
 
 ### Release Packages
 
