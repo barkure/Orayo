@@ -36,7 +36,7 @@ Orayo is a modern Windows Xray client built with WinUI 3.
 winget install barkure.Orayo
 ```
 
-### Release Packages
+### Release
 
 [Latest Release](https://github.com/barkure/Orayo/releases/latest): Setup (requires installation) and Portable (run directly, no installation needed).
 
