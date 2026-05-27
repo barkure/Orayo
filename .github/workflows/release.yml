@@ -3,11 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*-r*"
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, for example v26.5.17-r1"
+        description: "Release version, for example v26.5.27 or v26.5.27-r1"
         required: true
         type: string
 
@@ -38,14 +38,19 @@ jobs:
             "${{ github.ref_name }}"
           }
 
-          if ($version -notmatch '^v\d{2}\.\d{1,2}\.\d{1,2}-r\d+$') {
-            throw "Version '$version' is invalid. Use a tag like v26.5.17-r1."
+          if ($version -notmatch '^v\d{2}\.\d{1,2}\.\d{1,2}(-r\d+)?$') {
+            throw "Version '$version' is invalid. Use a tag like v26.5.27 or v26.5.27-r1."
           }
 
           $velopackVersion = $version.TrimStart('v')
-          $versionParts = $velopackVersion -split '-r'
-          $baseVersion = $versionParts[0]
-          $releaseNumber = $versionParts[1]
+          if ($velopackVersion -match '-r') {
+            $versionParts = $velopackVersion -split '-r'
+            $baseVersion = $versionParts[0]
+            $releaseNumber = $versionParts[1]
+          } else {
+            $baseVersion = $velopackVersion
+            $releaseNumber = "1"
+          }
           $assemblyVersion = "$baseVersion.$releaseNumber"
 
           "version=$version" >> $env:GITHUB_OUTPUT
