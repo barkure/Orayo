@@ -1,3 +1,5 @@
+[English](README.md) | [简体中文](README.zh-Hans.md)
+
 # Orayo
 
 <picture>
@@ -5,8 +7,6 @@
   <source media="(prefers-color-scheme: light)" srcset="./docs/assets/banner-light.webp">
   <img alt="Orayo banner" src="./docs/assets/banner-light.webp" width="250">
 </picture>
-
-[English](README.md) | [简体中文](README.zh-Hans.md)
 
 Orayo is a modern Windows Xray client built with WinUI 3.
 
