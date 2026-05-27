@@ -229,7 +229,7 @@
     <value>打开</value>
   </data>
   <data name="ButtonCheckUpdate" xml:space="preserve">
-    <value>检查更新</value>
+    <value>更新</value>
   </data>
   <data name="ButtonFormat" xml:space="preserve">
     <value>格式化</value>

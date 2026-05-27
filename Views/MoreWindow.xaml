@@ -8,7 +8,7 @@
     mc:Ignorable="d"
     Title="{local:Localize Key=TitleMore}">
 
-    <Grid Padding="24,16,24,24" RowSpacing="10">
+    <Grid Padding="24,16,0,24" RowSpacing="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -18,7 +18,7 @@
             <TextBlock x:Name="TitleBarTextBlock" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
         </Grid>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,24,0">
             <StackPanel Spacing="10">
                 <StackPanel Spacing="6">
                     <TextBlock Text="{local:Localize Key=TitleMore}" FontSize="22" FontWeight="SemiBold" />
@@ -109,8 +109,8 @@
 
                 <TextBlock Text="{local:Localize Key=SettingsLanguage}" FontWeight="SemiBold" VerticalAlignment="Center" />
 
-                <ComboBox x:Name="LanguageComboBox" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Width="120" SelectionChanged="LanguageComboBox_SelectionChanged">
-                    <ComboBoxItem Content="中文" Tag="zh-Hans" />
+                <ComboBox x:Name="LanguageComboBox" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" MinWidth="96" SelectionChanged="LanguageComboBox_SelectionChanged">
+                    <ComboBoxItem Content="简体中文" Tag="zh-Hans" />
                     <ComboBoxItem Content="English" Tag="en" />
                 </ComboBox>
             </Grid>
