@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using Windows.Graphics;
+using Orayo;
 using Orayo.Helpers;
 using Orayo.Services;
 
@@ -39,7 +40,7 @@ public sealed partial class RouteRulesWindow : Window
         InitializeComponent();
         WindowThemeHelper.Apply(this);
 
-        const string title = "路由设置";
+        var title = Strings.TitleRoute;
         AppWindow.Title = title;
         AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
         TitleBarTextBlock.Text = title;
@@ -89,7 +90,7 @@ public sealed partial class RouteRulesWindow : Window
         }
         catch (Exception ex)
         {
-            ShowError($"Monaco 编辑器初始化失败：{ex.Message}");
+            ShowError(string.Format(Strings.ErrMonacoInitFailed, ex.Message));
         }
         finally
         {
@@ -127,7 +128,7 @@ public sealed partial class RouteRulesWindow : Window
         {
             if (!args.IsSuccess)
             {
-                ShowError($"Monaco 页面加载失败：{args.WebErrorStatus}");
+                ShowError(string.Format(Strings.ErrMonacoLoadFailed, args.WebErrorStatus));
                 return;
             }
 
@@ -139,7 +140,7 @@ public sealed partial class RouteRulesWindow : Window
         }
         catch (Exception ex)
         {
-            ShowError($"Monaco 编辑器初始化失败：{ex.Message}");
+            ShowError(string.Format(Strings.ErrMonacoInitFailed, ex.Message));
         }
     }
 
@@ -216,7 +217,7 @@ public sealed partial class RouteRulesWindow : Window
             await Task.Delay(50);
         }
 
-        throw new InvalidOperationException("编辑器初始化超时。");
+        throw new InvalidOperationException(Strings.ErrEditorTimeout);
     }
     private async Task SetEditorContentAsync(string content)
     {
@@ -237,7 +238,7 @@ public sealed partial class RouteRulesWindow : Window
 
     private async Task<string> ExecuteScriptAsync(string script)
     {
-        var core = EditorWebView.CoreWebView2 ?? throw new InvalidOperationException("WebView2 尚未初始化完成。");
+        var core = EditorWebView.CoreWebView2 ?? throw new InvalidOperationException(Strings.ErrWebView2NotReady);
         return await core.ExecuteScriptAsync(script);
     }
 

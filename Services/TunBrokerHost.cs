@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using Orayo;
 
 namespace Orayo.Services;
 
@@ -119,7 +120,7 @@ public sealed class TunBrokerHost
     {
         if (string.IsNullOrWhiteSpace(requestText))
         {
-            return Fail("TUN Broker 错误", "请求为空。");
+            return Fail(Strings.ErrTunBrokerError, Strings.ErrRequestEmpty);
         }
 
         TunBrokerRequest? request;
@@ -129,12 +130,12 @@ public sealed class TunBrokerHost
         }
         catch (Exception ex)
         {
-            return Fail("TUN Broker 错误", ex.Message);
+            return Fail(Strings.ErrTunBrokerError, ex.Message);
         }
 
         if (request is null)
         {
-            return Fail("TUN Broker 错误", "请求无效。");
+            return Fail(Strings.ErrTunBrokerError, Strings.ErrRequestInvalid);
         }
 
         return request.Command switch
@@ -144,7 +145,7 @@ public sealed class TunBrokerHost
             "start" => await StartAsync(request),
             "stop" => await StopAsync(),
             "shutdown" => await ShutdownAsync(),
-            _ => Fail("TUN Broker 错误", $"未知命令：{request.Command}")
+            _ => Fail(Strings.ErrTunBrokerError, string.Format(Strings.ErrUnknownCommand, request.Command))
         };
     }
 
@@ -152,13 +153,13 @@ public sealed class TunBrokerHost
     {
         if (string.IsNullOrWhiteSpace(request.ConfigJson))
         {
-            return Fail("TUN Broker 错误", "缺少配置。");
+            return Fail(Strings.ErrTunBrokerError, Strings.ErrMissingConfig);
         }
 
         var ok = await _xray.StartAsync(request.ConfigJson);
         if (!ok)
         {
-            return Fail("连接失败", string.IsNullOrWhiteSpace(_xray.LastError) ? "xray 启动失败。" : _xray.LastError);
+            return Fail(Strings.ErrConnectionFailed, string.IsNullOrWhiteSpace(_xray.LastError) ? Strings.ErrXrayStartFailed : _xray.LastError);
         }
         return Ok();
     }

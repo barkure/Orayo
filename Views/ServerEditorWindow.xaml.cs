@@ -5,6 +5,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Graphics;
+using Orayo;
 using Orayo.Helpers;
 using Orayo.Models;
 using Orayo.Services;
@@ -29,10 +30,12 @@ public sealed partial class ServerEditorWindow : Window
 
     public ServerEntry Server { get; private set; }
 
-    public ServerEditorWindow(Window owner, ServerEntry server, string title = "手动添加节点", string saveButtonText = "添加")
+    public ServerEditorWindow(Window owner, ServerEntry server, string? title = null, string? saveButtonText = null)
     {
         _owner = owner;
         Server = server.Clone();
+        title ??= Strings.TitleAddServer;
+        saveButtonText ??= Strings.ButtonAdd;
         InitializeComponent();
         WindowThemeHelper.Apply(this);
 

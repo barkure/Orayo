@@ -17,5 +17,7 @@ public class AppSettings
     public string? RoutingRuleJson { get; set; }
 
     public string? DnsJson { get; set; }
+
+    public string Language { get; set; } = "zh-Hans";
 }
 

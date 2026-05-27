@@ -6,6 +6,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Orayo;
 
 namespace Orayo.Services;
 
@@ -193,8 +194,8 @@ public class XrayService
 
         if (!File.Exists(ExePath))
         {
-            LastError = $"找不到 xray.exe\n路径：{ExePath}";
-            AppendLog("[错误] " + LastError);
+            LastError = string.Format(Strings.ErrXrayExeNotFound, ExePath);
+            AppendLog(string.Format(Strings.LogError, LastError));
             return false;
         }
 
@@ -236,16 +237,16 @@ public class XrayService
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
 
-            AppendLog($"[启动] {ExePath}");
-            AppendLog($"[配置] {ConfigPath}");
+            AppendLog(string.Format(Strings.LogStart, ExePath));
+            AppendLog(string.Format(Strings.LogConfig, ConfigPath));
 
             await Task.Delay(800);
 
             if (_process.HasExited)
             {
                 var startupLog = StopStartupLogCaptureAndRead();
-                LastError = startupLog.Length > 0 ? startupLog : $"xray 立即退出（退出码 {_process.ExitCode}）";
-                AppendLog("[错误] 启动失败：" + LastError);
+                LastError = startupLog.Length > 0 ? startupLog : string.Format(Strings.ErrXrayExitImmediately, _process.ExitCode);
+                AppendLog(string.Format(Strings.LogStartFailed, LastError));
                 DisposeExitedProcess();
                 return false;
             }
@@ -258,7 +259,7 @@ public class XrayService
         {
             StopStartupLogCapture();
             LastError = ex.Message;
-            AppendLog("[异常] " + ex.Message);
+            AppendLog(string.Format(Strings.LogException, ex.Message));
             DisposeExitedProcess();
             return false;
         }
@@ -298,7 +299,7 @@ public class XrayService
             CloseJobObject();
         }
 
-        AppendLog("[已停止]");
+        AppendLog(Strings.LogStopped);
         RunningChanged?.Invoke(this, false);
     }
 
@@ -309,7 +310,7 @@ public class XrayService
         _jobHandle = CreateJobObject(IntPtr.Zero, $"OrayoXrayJob-{Environment.ProcessId}");
         if (_jobHandle == IntPtr.Zero)
         {
-            AppendLog("[警告] 未能创建作业对象，无法绑定进程生命周期。");
+            AppendLog(Strings.WarnJobObjectFailed);
             return;
         }
 
@@ -328,14 +329,14 @@ public class XrayService
             Marshal.StructureToPtr(info, ptr, false);
             if (!SetInformationJobObject(_jobHandle, 9, ptr, size))
             {
-                AppendLog("[警告] 无法设置作业对象限制，xray 无法跟随退出。");
+                AppendLog(Strings.WarnJobObjectLimit);
                 CloseJobObject();
                 return;
             }
 
             if (!AssignProcessToJobObject(_jobHandle, process.Handle))
             {
-                AppendLog("[警告] 无法将 xray 绑定到作业对象。");
+                AppendLog(Strings.WarnJobObjectAssign);
                 CloseJobObject();
             }
         }
@@ -443,7 +444,7 @@ public class XrayService
 
     private void OnProcessExited(object? sender, EventArgs e)
     {
-        AppendLog("[xray 进程已退出]");
+        AppendLog(Strings.LogXrayExited);
         RunningChanged?.Invoke(this, false);
     }
 }

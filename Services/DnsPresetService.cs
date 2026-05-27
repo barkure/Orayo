@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using Orayo;
 
 namespace Orayo.Services;
 
@@ -69,14 +70,14 @@ public static class DnsPresetService
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new JsonException("DNS JSON 不能为空。");
+            throw new JsonException(Strings.ErrDnsJsonEmpty);
         }
 
         var node = JsonNode.Parse(json) as JsonObject
-                   ?? throw new JsonException("DNS JSON 必须是一个对象。");
+                   ?? throw new JsonException(Strings.ErrDnsJsonNotObject);
 
         node["hosts"] = node["hosts"] as JsonObject ?? new JsonObject();
-        node["servers"] = ValidateServers(node["servers"] as JsonArray ?? throw new JsonException("DNS JSON 缺少 servers 数组。"));
+        node["servers"] = ValidateServers(node["servers"] as JsonArray ?? throw new JsonException(Strings.ErrDnsJsonMissingServers));
         node["queryStrategy"] = string.IsNullOrWhiteSpace(node["queryStrategy"]?.GetValue<string>())
             ? "UseIPv4"
             : node["queryStrategy"]!.GetValue<string>();
@@ -88,7 +89,7 @@ public static class DnsPresetService
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new JsonException("DNS JSON 不能为空。");
+            throw new JsonException(Strings.ErrDnsJsonEmpty);
         }
 
         var wrapped = "{" + Environment.NewLine + json.Trim() + Environment.NewLine + "}";
@@ -126,7 +127,7 @@ public static class DnsPresetService
 
             if (item is not JsonObject)
             {
-                throw new JsonException($"第 {i + 1} 个 DNS 服务器配置无效。");
+                throw new JsonException(string.Format(Strings.ErrDnsServerInvalid, i + 1));
             }
         }
 

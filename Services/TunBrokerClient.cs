@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using Orayo;
 
 namespace Orayo.Services;
 
@@ -31,7 +32,7 @@ public sealed class TunBrokerClient
         var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
         if (string.IsNullOrWhiteSpace(exePath))
         {
-            LastError = "无法确定 Orayo.exe 路径。";
+            LastError = Strings.ErrCannotDetermineExePath;
             return false;
         }
 
@@ -47,12 +48,12 @@ public sealed class TunBrokerClient
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            LastError = "已取消 UAC 授权。";
+            LastError = Strings.ErrUacCancelled;
             return false;
         }
         catch (Exception ex)
         {
-            LastError = "启动 TUN 权限代理失败：" + ex.Message;
+            LastError = Strings.ErrTunBrokerStartFailed + ex.Message;
             return false;
         }
 
@@ -74,8 +75,8 @@ public sealed class TunBrokerClient
         }
 
         LastError = string.IsNullOrWhiteSpace(lastProbeError)
-            ? "TUN 权限代理启动后未响应。"
-            : "TUN 权限代理启动后未响应：" + lastProbeError;
+            ? Strings.ErrTunBrokerNoResponse
+            : Strings.ErrTunBrokerNoResponseWith + lastProbeError;
         return false;
     }
 
@@ -99,7 +100,7 @@ public sealed class TunBrokerClient
         });
         if (response?.Success != true)
         {
-            LastError = response?.ErrorMessage ?? error ?? "TUN 权限代理启动 xray 失败。";
+            LastError = response?.ErrorMessage ?? error ?? Strings.ErrTunBrokerXrayFailed;
         }
 
         return response;
@@ -142,7 +143,7 @@ public sealed class TunBrokerClient
             var responseText = await ReadMessageAsync(client);
             if (string.IsNullOrWhiteSpace(responseText))
             {
-                return (null, "权限代理返回了空响应。");
+                return (null, Strings.ErrTunBrokerEmptyResponse);
             }
 
             return (JsonSerializer.Deserialize<TunBrokerResponse>(responseText, JsonOptions), null);

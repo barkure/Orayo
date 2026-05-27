@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- MainWindow: Headers -->
+  <data name="TitleDNS" xml:space="preserve">
+    <value>DNS 设置</value>
+  </data>
+  <data name="TitleRoute" xml:space="preserve">
+    <value>路由设置</value>
+  </data>
+  <data name="TipMore" xml:space="preserve">
+    <value>更多</value>
+  </data>
+
+  <!-- MainWindow: Routing mode -->
+  <data name="RoutingRuleMode" xml:space="preserve">
+    <value>规则路由</value>
+  </data>
+  <data name="GlobalProxyMode" xml:space="preserve">
+    <value>全局代理</value>
+  </data>
+
+  <!-- MainWindow: Port labels -->
+  <data name="LabelSocksPort" xml:space="preserve">
+    <value>SOCKS 端口</value>
+  </data>
+  <data name="LabelHttpPort" xml:space="preserve">
+    <value>HTTP(S) 端口</value>
+  </data>
+
+  <!-- MainWindow: Toggle buttons -->
+  <data name="ToggleSystemProxy" xml:space="preserve">
+    <value>系统代理</value>
+  </data>
+  <data name="ToggleTunMode" xml:space="preserve">
+    <value>TUN 模式</value>
+  </data>
+
+  <!-- MainWindow: Toolbar tooltips -->
+  <data name="TipPasteImport" xml:space="preserve">
+    <value>粘贴导入</value>
+  </data>
+  <data name="TipManualAdd" xml:space="preserve">
+    <value>手动添加</value>
+  </data>
+  <data name="TipLatencyTest" xml:space="preserve">
+    <value>延迟检测</value>
+  </data>
+
+  <!-- MainWindow: Context menu -->
+  <data name="MenuEdit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="MenuShare" xml:space="preserve">
+    <value>分享</value>
+  </data>
+
+  <!-- MainWindow: Empty state -->
+  <data name="EmptyHint" xml:space="preserve">
+    <value>还没有节点，先用粘贴导入或手动添加。</value>
+  </data>
+
+  <!-- MainWindow: Status text -->
+  <data name="StatusRunning" xml:space="preserve">
+    <value>运行中: {0}</value>
+  </data>
+  <data name="StatusDisconnected" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="StatusNotSelected" xml:space="preserve">
+    <value>未选择节点</value>
+  </data>
+  <data name="StatusCurrentSelected" xml:space="preserve">
+    <value>当前选中: {0}</value>
+  </data>
+
+  <!-- MainWindow: TUN hints -->
+  <data name="TunHintOn" xml:space="preserve">
+    <value>TUN 模式参考 XrayUI-dev：当前节点会持续运行，切节点时自动重建 TUN 会话。</value>
+  </data>
+  <data name="TunHintOff" xml:space="preserve">
+    <value>关闭 TUN 时始终维持本地代理入口；系统代理开关只影响 Windows 代理接管。</value>
+  </data>
+
+  <!-- MainWindow: Route summary -->
+  <data name="RouteRuleCount" xml:space="preserve">
+    <value>，规则 {0} 条</value>
+  </data>
+  <data name="RouteSummaryTun" xml:space="preserve">
+    <value>当前：TUN + {0}{1}。系统代理设置在 TUN 模式下不生效。</value>
+  </data>
+  <data name="RouteSummaryNormal" xml:space="preserve">
+    <value>当前：{0}，系统代理{1}{2}。</value>
+  </data>
+  <data name="ProxyEnabled" xml:space="preserve">
+    <value>已接管</value>
+  </data>
+  <data name="ProxyDisabled" xml:space="preserve">
+    <value>未接管</value>
+  </data>
+
+  <!-- MainWindow: Latency -->
+  <data name="LatencyTimeout" xml:space="preserve">
+    <value>超时</value>
+  </data>
+
+  <!-- MainWindow: Dialog messages -->
+  <data name="ErrCannotTest" xml:space="preserve">
+    <value>无法检测</value>
+  </data>
+  <data name="ErrCloseTunForTest" xml:space="preserve">
+    <value>请关闭 TUN 后测试延迟</value>
+  </data>
+  <data name="MsgNoClipboard" xml:space="preserve">
+    <value>没有可导入内容</value>
+  </data>
+  <data name="MsgNoClipboardContent" xml:space="preserve">
+    <value>剪贴板里没有文本节点链接。</value>
+  </data>
+  <data name="MsgImportDone" xml:space="preserve">
+    <value>导入完成</value>
+  </data>
+  <data name="MsgNoNewNodes" xml:space="preserve">
+    <value>没有识别到可导入的新节点。</value>
+  </data>
+
+  <!-- MainWindow: Server editor titles -->
+  <data name="TitleAddServer" xml:space="preserve">
+    <value>手动添加节点</value>
+  </data>
+  <data name="TitleEditServer" xml:space="preserve">
+    <value>编辑节点</value>
+  </data>
+
+  <!-- MainWindow: Delete/Share -->
+  <data name="TitleDeleteServer" xml:space="preserve">
+    <value>删除节点</value>
+  </data>
+  <data name="MsgConfirmDelete" xml:space="preserve">
+    <value>确认删除节点"{0}"？</value>
+  </data>
+  <data name="ErrCannotDelete" xml:space="preserve">
+    <value>无法删除</value>
+  </data>
+  <data name="ErrCannotDeleteActive" xml:space="preserve">
+    <value>正在使用的节点无法删除，请先切换到其他节点。</value>
+  </data>
+  <data name="ErrCannotShare" xml:space="preserve">
+    <value>无法分享</value>
+  </data>
+  <data name="ErrCannotShareProtocol" xml:space="preserve">
+    <value>当前节点协议暂不支持导出分享链接。</value>
+  </data>
+  <data name="MsgCopied" xml:space="preserve">
+    <value>已复制</value>
+  </data>
+  <data name="MsgShareLinkCopied" xml:space="preserve">
+    <value>分享链接已复制到剪贴板。</value>
+  </data>
+  <data name="TitleShareLink" xml:space="preserve">
+    <value>分享链接</value>
+  </data>
+  <data name="MsgClipboardFailed" xml:space="preserve">
+    <value>写入剪贴板失败，请手动复制下面的分享链接。</value>
+  </data>
+
+  <!-- Common buttons -->
+  <data name="ButtonAdd" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="ButtonSave" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="ButtonCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ButtonClose" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="ButtonOK" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="ButtonUpdate" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="ButtonOpen" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="ButtonCheckUpdate" xml:space="preserve">
+    <value>检查更新</value>
+  </data>
+  <data name="ButtonFormat" xml:space="preserve">
+    <value>格式化</value>
+  </data>
+  <data name="ButtonReset" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="ButtonUpdateAndRestart" xml:space="preserve">
+    <value>更新并重启</value>
+  </data>
+
+  <!-- MoreWindow -->
+  <data name="TitleMore" xml:space="preserve">
+    <value>更多</value>
+  </data>
+  <data name="MoreDescription" xml:space="preserve">
+    <value>Xray 内核、Geo 数据文件和软件信息</value>
+  </data>
+  <data name="AutoStart" xml:space="preserve">
+    <value>开机自启动</value>
+  </data>
+  <data name="AutoStartEnabled" xml:space="preserve">
+    <value>已开启</value>
+  </data>
+  <data name="AutoStartDisabled" xml:space="preserve">
+    <value>开启</value>
+  </data>
+  <data name="XrayCore" xml:space="preserve">
+    <value>Xray-core</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>读取中...</value>
+  </data>
+  <data name="GeoFiles" xml:space="preserve">
+    <value>Geo 数据文件</value>
+  </data>
+  <data name="GeoDescription" xml:space="preserve">
+    <value>geoip.dat 和 geosite.dat 来自</value>
+  </data>
+  <data name="LoopbackManager" xml:space="preserve">
+    <value>网络回环管理器</value>
+  </data>
+  <data name="LoopbackDescription" xml:space="preserve">
+    <value>用于处理 UWP / Microsoft Store 应用无法访问本机代理的问题</value>
+  </data>
+  <data name="AboutOrayo" xml:space="preserve">
+    <value>关于 Orayo</value>
+  </data>
+  <data name="AboutDescription" xml:space="preserve">
+    <value>一个适用于 Windows 的现代化 Xray 客户端</value>
+  </data>
+  <data name="AppVersionLoading" xml:space="preserve">
+    <value>当前版本：读取中...</value>
+  </data>
+  <data name="AppVersionFormat" xml:space="preserve">
+    <value>当前版本：{0} ({1})</value>
+  </data>
+  <data name="StatusDownloadingXray" xml:space="preserve">
+    <value>正在下载 Xray-core</value>
+  </data>
+  <data name="StatusXrayDownloaded" xml:space="preserve">
+    <value>下载完成，正在保存待应用更新</value>
+  </data>
+  <data name="StatusXrayApplied" xml:space="preserve">
+    <value>Xray-core 已下载，将在下次启动应用时生效</value>
+  </data>
+  <data name="StatusUpdatingGeo" xml:space="preserve">
+    <value>正在更新 Geo 数据文件</value>
+  </data>
+  <data name="StatusGeoDownloaded" xml:space="preserve">
+    <value>下载完成，正在替换 Geo 数据文件</value>
+  </data>
+  <data name="StatusGeoApplied" xml:space="preserve">
+    <value>Geo 数据文件已更新，新的规则将在下次启动或手动重连后生效</value>
+  </data>
+  <data name="StatusCheckingUpdate" xml:space="preserve">
+    <value>正在检查应用更新</value>
+  </data>
+  <data name="StatusUpdateNotSupported" xml:space="preserve">
+    <value>当前运行方式不支持自动更新，请下载安装包或便携版新版本后替换</value>
+  </data>
+  <data name="StatusAlreadyLatest" xml:space="preserve">
+    <value>当前已是最新版本</value>
+  </data>
+  <data name="TitleNewVersion" xml:space="preserve">
+    <value>发现新版本</value>
+  </data>
+  <data name="MsgNewVersion" xml:space="preserve">
+    <value>发现 Orayo {0}，是否现在下载并重启完成更新？</value>
+  </data>
+  <data name="StatusUpdateCancelled" xml:space="preserve">
+    <value>已取消应用更新</value>
+  </data>
+  <data name="StatusDownloadingUpdate" xml:space="preserve">
+    <value>正在下载应用更新：{0}%</value>
+  </data>
+  <data name="StatusUpdateDownloaded" xml:space="preserve">
+    <value>下载完成，正在重启应用</value>
+  </data>
+  <data name="ErrLoopbackNotFound" xml:space="preserve">
+    <value>找不到网络回环管理器：{0}</value>
+  </data>
+  <data name="StatusLoopbackOpened" xml:space="preserve">
+    <value>已打开网络回环管理器</value>
+  </data>
+  <data name="ErrLoopbackFailed" xml:space="preserve">
+    <value>打开网络回环管理器失败：{0}</value>
+  </data>
+  <data name="ErrAutoStartFailed" xml:space="preserve">
+    <value>写入开机自启失败</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>未知</value>
+  </data>
+
+  <!-- MoreWindow: Language -->
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="TitleLanguageChange" xml:space="preserve">
+    <value>切换语言</value>
+  </data>
+  <data name="MsgConfirmLanguageChange" xml:space="preserve">
+    <value>切换语言需要重启应用，是否继续？</value>
+  </data>
+
+  <!-- ServerEditorWindow -->
+  <data name="SectionBasic" xml:space="preserve">
+    <value>基础信息</value>
+  </data>
+  <data name="LabelName" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="PlaceholderName" xml:space="preserve">
+    <value>例如：JP-01</value>
+  </data>
+  <data name="LabelProtocol" xml:space="preserve">
+    <value>协议</value>
+  </data>
+  <data name="LabelAddress" xml:space="preserve">
+    <value>地址</value>
+  </data>
+  <data name="LabelPort" xml:space="preserve">
+    <value>端口</value>
+  </data>
+  <data name="SectionProtocol" xml:space="preserve">
+    <value>协议设置</value>
+  </data>
+  <data name="LabelPassword" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="LabelEncryption" xml:space="preserve">
+    <value>加密方式</value>
+  </data>
+  <data name="PlaceholderEncryption" xml:space="preserve">
+    <value>例如：aes-128-gcm</value>
+  </data>
+  <data name="LabelNetwork" xml:space="preserve">
+    <value>传输方式</value>
+  </data>
+  <data name="SectionTransport" xml:space="preserve">
+    <value>传输安全</value>
+  </data>
+  <data name="LabelType" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="LabelAllowInsecure" xml:space="preserve">
+    <value>允许不安全证书</value>
+  </data>
+  <data name="SectionAdvanced" xml:space="preserve">
+    <value>高级配置</value>
+  </data>
+
+  <!-- Dns/Route Settings Windows -->
+  <data name="ConfigHint" xml:space="preserve">
+    <value>配置更改保存后立即生效，规则可参考</value>
+  </data>
+
+  <!-- Common errors -->
+  <data name="ErrConnectionFailed" xml:space="preserve">
+    <value>连接失败</value>
+  </data>
+  <data name="ErrConnectionFailedMsg" xml:space="preserve">
+    <value>连接失败。</value>
+  </data>
+  <data name="ErrTunModeError" xml:space="preserve">
+    <value>TUN 模式错误</value>
+  </data>
+  <data name="ErrCannotStartTunBroker" xml:space="preserve">
+    <value>无法启动 TUN 权限代理。</value>
+  </data>
+  <data name="ErrWintunNotFound" xml:space="preserve">
+    <value>找不到 wintun.dll
+路径：{0}</value>
+  </data>
+  <data name="ErrTunStartFailed" xml:space="preserve">
+    <value>TUN 启动失败。</value>
+  </data>
+  <data name="ErrXrayStartFailed" xml:space="preserve">
+    <value>xray 启动失败。</value>
+  </data>
+
+  <!-- CoreUpdateService -->
+  <data name="ErrXrayNotFound" xml:space="preserve">
+    <value>未找到 xray.exe</value>
+  </data>
+  <data name="ErrCannotStartXray" xml:space="preserve">
+    <value>无法启动 xray.exe</value>
+  </data>
+  <data name="UnknownVersion" xml:space="preserve">
+    <value>未知版本</value>
+  </data>
+  <data name="ErrXrayNotInPackage" xml:space="preserve">
+    <value>Xray 更新包中未找到 xray.exe。</value>
+  </data>
+  <data name="ErrUpdateVersionLower" xml:space="preserve">
+    <value>检测到更新版本 {0} 低于当前版本 {1}，已跳过更新</value>
+  </data>
+  <data name="ErrDownloadEmpty" xml:space="preserve">
+    <value>下载文件为空。</value>
+  </data>
+
+  <!-- XrayService logs -->
+  <data name="ErrXrayExeNotFound" xml:space="preserve">
+    <value>找不到 xray.exe
+路径：{0}</value>
+  </data>
+  <data name="LogError" xml:space="preserve">
+    <value>[错误] {0}</value>
+  </data>
+  <data name="LogStart" xml:space="preserve">
+    <value>[启动] {0}</value>
+  </data>
+  <data name="LogConfig" xml:space="preserve">
+    <value>[配置] {0}</value>
+  </data>
+  <data name="ErrXrayExitImmediately" xml:space="preserve">
+    <value>xray 立即退出（退出码 {0}）</value>
+  </data>
+  <data name="LogStartFailed" xml:space="preserve">
+    <value>[错误] 启动失败：{0}</value>
+  </data>
+  <data name="LogException" xml:space="preserve">
+    <value>[异常] {0}</value>
+  </data>
+  <data name="LogStopped" xml:space="preserve">
+    <value>[已停止]</value>
+  </data>
+  <data name="WarnJobObjectFailed" xml:space="preserve">
+    <value>[警告] 未能创建作业对象，无法绑定进程生命周期。</value>
+  </data>
+  <data name="WarnJobObjectLimit" xml:space="preserve">
+    <value>[警告] 无法设置作业对象限制，xray 无法跟随退出。</value>
+  </data>
+  <data name="WarnJobObjectAssign" xml:space="preserve">
+    <value>[警告] 无法将 xray 绑定到作业对象。</value>
+  </data>
+  <data name="LogXrayExited" xml:space="preserve">
+    <value>[xray 进程已退出]</value>
+  </data>
+
+  <!-- PortConflictService -->
+  <data name="ErrPortConflictLegacy" xml:space="preserve">
+    <value>本地端口 {0} 被遗留的 Orayo xray.exe 占用，自动清理失败：{1}</value>
+  </data>
+  <data name="ErrPortConflict" xml:space="preserve">
+    <value>本地端口 {0} 已被占用。
+进程：{1} (PID {2})
+路径：{3}</value>
+  </data>
+  <data name="ErrPortConflictUnknown" xml:space="preserve">
+    <value>本地端口 {0} 已被占用，且无法识别占用进程：{1}</value>
+  </data>
+
+  <!-- TunBrokerClient -->
+  <data name="ErrCannotDetermineExePath" xml:space="preserve">
+    <value>无法确定 Orayo.exe 路径。</value>
+  </data>
+  <data name="ErrUacCancelled" xml:space="preserve">
+    <value>已取消 UAC 授权。</value>
+  </data>
+  <data name="ErrTunBrokerStartFailed" xml:space="preserve">
+    <value>启动 TUN 权限代理失败：</value>
+  </data>
+  <data name="ErrTunBrokerNoResponse" xml:space="preserve">
+    <value>TUN 权限代理启动后未响应。</value>
+  </data>
+  <data name="ErrTunBrokerNoResponseWith" xml:space="preserve">
+    <value>TUN 权限代理启动后未响应：</value>
+  </data>
+  <data name="ErrTunBrokerXrayFailed" xml:space="preserve">
+    <value>TUN 权限代理启动 xray 失败。</value>
+  </data>
+  <data name="ErrTunBrokerEmptyResponse" xml:space="preserve">
+    <value>权限代理返回了空响应。</value>
+  </data>
+
+  <!-- TunBrokerHost -->
+  <data name="ErrTunBrokerError" xml:space="preserve">
+    <value>TUN Broker 错误</value>
+  </data>
+  <data name="ErrRequestEmpty" xml:space="preserve">
+    <value>请求为空。</value>
+  </data>
+  <data name="ErrRequestInvalid" xml:space="preserve">
+    <value>请求无效。</value>
+  </data>
+  <data name="ErrUnknownCommand" xml:space="preserve">
+    <value>未知命令：{0}</value>
+  </data>
+  <data name="ErrMissingConfig" xml:space="preserve">
+    <value>缺少配置。</value>
+  </data>
+
+  <!-- DnsPresetService -->
+  <data name="ErrDnsJsonEmpty" xml:space="preserve">
+    <value>DNS JSON 不能为空。</value>
+  </data>
+  <data name="ErrDnsJsonNotObject" xml:space="preserve">
+    <value>DNS JSON 必须是一个对象。</value>
+  </data>
+  <data name="ErrDnsJsonMissingServers" xml:space="preserve">
+    <value>DNS JSON 缺少 servers 数组。</value>
+  </data>
+  <data name="ErrDnsServerInvalid" xml:space="preserve">
+    <value>第 {0} 个 DNS 服务器配置无效。</value>
+  </data>
+
+  <!-- RouteRulePresetService -->
+  <data name="ErrRoutingJsonEmpty" xml:space="preserve">
+    <value>routing JSON 不能为空。</value>
+  </data>
+  <data name="ErrRoutingJsonNotObject" xml:space="preserve">
+    <value>routing JSON 必须是一个对象。</value>
+  </data>
+  <data name="ErrRoutingJsonMissingRules" xml:space="preserve">
+    <value>routing JSON 缺少 rules 数组。</value>
+  </data>
+  <data name="ErrRoutingRuleNotObject" xml:space="preserve">
+    <value>第 {0} 条规则必须是对象。</value>
+  </data>
+  <data name="ErrRoutingRuleType" xml:space="preserve">
+    <value>第 {0} 条规则的 type 目前只支持 field。</value>
+  </data>
+  <data name="ErrRoutingRuleMissingTag" xml:space="preserve">
+    <value>第 {0} 条规则缺少 outboundTag。</value>
+  </data>
+
+  <!-- Editor errors -->
+  <data name="ErrMonacoInitFailed" xml:space="preserve">
+    <value>Monaco 编辑器初始化失败：{0}</value>
+  </data>
+  <data name="ErrMonacoLoadFailed" xml:space="preserve">
+    <value>Monaco 页面加载失败：{0}</value>
+  </data>
+  <data name="ErrEditorTimeout" xml:space="preserve">
+    <value>编辑器初始化超时。</value>
+  </data>
+  <data name="ErrWebView2NotReady" xml:space="preserve">
+    <value>WebView2 尚未初始化完成。</value>
+  </data>
+
+  <!-- Tray icon -->
+  <data name="TrayShowOrayo" xml:space="preserve">
+    <value>显示 Orayo</value>
+  </data>
+  <data name="TrayExit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+</root>

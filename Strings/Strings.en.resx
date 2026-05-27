@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- MainWindow: Headers -->
+  <data name="TitleDNS" xml:space="preserve">
+    <value>DNS Settings</value>
+  </data>
+  <data name="TitleRoute" xml:space="preserve">
+    <value>Route Settings</value>
+  </data>
+  <data name="TipMore" xml:space="preserve">
+    <value>More</value>
+  </data>
+
+  <!-- MainWindow: Routing mode -->
+  <data name="RoutingRuleMode" xml:space="preserve">
+    <value>Rules</value>
+  </data>
+  <data name="GlobalProxyMode" xml:space="preserve">
+    <value>Global</value>
+  </data>
+
+  <!-- MainWindow: Port labels -->
+  <data name="LabelSocksPort" xml:space="preserve">
+    <value>SOCKS Port</value>
+  </data>
+  <data name="LabelHttpPort" xml:space="preserve">
+    <value>HTTP(S) Port</value>
+  </data>
+
+  <!-- MainWindow: Toggle buttons -->
+  <data name="ToggleSystemProxy" xml:space="preserve">
+    <value>System Proxy</value>
+  </data>
+  <data name="ToggleTunMode" xml:space="preserve">
+    <value>TUN Mode</value>
+  </data>
+
+  <!-- MainWindow: Toolbar tooltips -->
+  <data name="TipPasteImport" xml:space="preserve">
+    <value>Paste Import</value>
+  </data>
+  <data name="TipManualAdd" xml:space="preserve">
+    <value>Add Manually</value>
+  </data>
+  <data name="TipLatencyTest" xml:space="preserve">
+    <value>Latency Test</value>
+  </data>
+
+  <!-- MainWindow: Context menu -->
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="MenuShare" xml:space="preserve">
+    <value>Share</value>
+  </data>
+
+  <!-- MainWindow: Empty state -->
+  <data name="EmptyHint" xml:space="preserve">
+    <value>No servers yet. Paste to import or add one manually.</value>
+  </data>
+
+  <!-- MainWindow: Status text -->
+  <data name="StatusRunning" xml:space="preserve">
+    <value>Connected: {0}</value>
+  </data>
+  <data name="StatusDisconnected" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="StatusNotSelected" xml:space="preserve">
+    <value>No server selected</value>
+  </data>
+  <data name="StatusCurrentSelected" xml:space="preserve">
+    <value>Selected: {0}</value>
+  </data>
+
+  <!-- MainWindow: TUN hints -->
+  <data name="TunHintOn" xml:space="preserve">
+    <value>TUN mode (ref XrayUI-dev): the current server stays active; TUN session is rebuilt automatically on server switch.</value>
+  </data>
+  <data name="TunHintOff" xml:space="preserve">
+    <value>When TUN is off, the local proxy entry is always kept; the system proxy toggle only affects Windows proxy takeover.</value>
+  </data>
+
+  <!-- MainWindow: Route summary -->
+  <data name="RouteRuleCount" xml:space="preserve">
+    <value>, {0} rule(s)</value>
+  </data>
+  <data name="RouteSummaryTun" xml:space="preserve">
+    <value>Current: TUN + {0}{1}. System proxy is ignored in TUN mode.</value>
+  </data>
+  <data name="RouteSummaryNormal" xml:space="preserve">
+    <value>Current: {0}, system proxy {1}{2}.</value>
+  </data>
+  <data name="ProxyEnabled" xml:space="preserve">
+    <value>active</value>
+  </data>
+  <data name="ProxyDisabled" xml:space="preserve">
+    <value>inactive</value>
+  </data>
+
+  <!-- MainWindow: Latency -->
+  <data name="LatencyTimeout" xml:space="preserve">
+    <value>Timeout</value>
+  </data>
+
+  <!-- MainWindow: Dialog messages -->
+  <data name="ErrCannotTest" xml:space="preserve">
+    <value>Cannot Test</value>
+  </data>
+  <data name="ErrCloseTunForTest" xml:space="preserve">
+    <value>Please disable TUN mode before testing latency.</value>
+  </data>
+  <data name="MsgNoClipboard" xml:space="preserve">
+    <value>Nothing to Import</value>
+  </data>
+  <data name="MsgNoClipboardContent" xml:space="preserve">
+    <value>No text node links found in clipboard.</value>
+  </data>
+  <data name="MsgImportDone" xml:space="preserve">
+    <value>Import Complete</value>
+  </data>
+  <data name="MsgNoNewNodes" xml:space="preserve">
+    <value>No new importable nodes found.</value>
+  </data>
+
+  <!-- MainWindow: Server editor titles -->
+  <data name="TitleAddServer" xml:space="preserve">
+    <value>Add Server Manually</value>
+  </data>
+  <data name="TitleEditServer" xml:space="preserve">
+    <value>Edit Server</value>
+  </data>
+
+  <!-- MainWindow: Delete/Share -->
+  <data name="TitleDeleteServer" xml:space="preserve">
+    <value>Delete Server</value>
+  </data>
+  <data name="MsgConfirmDelete" xml:space="preserve">
+    <value>Delete server "{0}"?</value>
+  </data>
+  <data name="ErrCannotDelete" xml:space="preserve">
+    <value>Cannot Delete</value>
+  </data>
+  <data name="ErrCannotDeleteActive" xml:space="preserve">
+    <value>The active server cannot be deleted. Please switch to another server first.</value>
+  </data>
+  <data name="ErrCannotShare" xml:space="preserve">
+    <value>Cannot Share</value>
+  </data>
+  <data name="ErrCannotShareProtocol" xml:space="preserve">
+    <value>Sharing links are not supported for this protocol.</value>
+  </data>
+  <data name="MsgCopied" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="MsgShareLinkCopied" xml:space="preserve">
+    <value>Share link copied to clipboard.</value>
+  </data>
+  <data name="TitleShareLink" xml:space="preserve">
+    <value>Share Link</value>
+  </data>
+  <data name="MsgClipboardFailed" xml:space="preserve">
+    <value>Failed to write to clipboard. Please copy the share link below manually.</value>
+  </data>
+
+  <!-- Common buttons -->
+  <data name="ButtonAdd" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="ButtonSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ButtonCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ButtonClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ButtonOK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ButtonUpdate" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="ButtonOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="ButtonCheckUpdate" xml:space="preserve">
+    <value>Check Update</value>
+  </data>
+  <data name="ButtonFormat" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="ButtonReset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="ButtonUpdateAndRestart" xml:space="preserve">
+    <value>Update &amp; Restart</value>
+  </data>
+
+  <!-- MoreWindow -->
+  <data name="TitleMore" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="MoreDescription" xml:space="preserve">
+    <value>Xray core, Geo data files and app info</value>
+  </data>
+  <data name="AutoStart" xml:space="preserve">
+    <value>Start on Boot</value>
+  </data>
+  <data name="AutoStartEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="AutoStartDisabled" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="XrayCore" xml:space="preserve">
+    <value>Xray-core</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="GeoFiles" xml:space="preserve">
+    <value>Geo Data Files</value>
+  </data>
+  <data name="GeoDescription" xml:space="preserve">
+    <value>geoip.dat and geosite.dat from</value>
+  </data>
+  <data name="LoopbackManager" xml:space="preserve">
+    <value>Loopback Manager</value>
+  </data>
+  <data name="LoopbackDescription" xml:space="preserve">
+    <value>Fixes UWP / Microsoft Store apps unable to access the local proxy</value>
+  </data>
+  <data name="AboutOrayo" xml:space="preserve">
+    <value>About Orayo</value>
+  </data>
+  <data name="AboutDescription" xml:space="preserve">
+    <value>A modern Xray client for Windows</value>
+  </data>
+  <data name="AppVersionLoading" xml:space="preserve">
+    <value>Current version: Loading...</value>
+  </data>
+  <data name="AppVersionFormat" xml:space="preserve">
+    <value>Current version: {0} ({1})</value>
+  </data>
+  <data name="StatusDownloadingXray" xml:space="preserve">
+    <value>Downloading Xray-core</value>
+  </data>
+  <data name="StatusXrayDownloaded" xml:space="preserve">
+    <value>Download complete, saving pending update</value>
+  </data>
+  <data name="StatusXrayApplied" xml:space="preserve">
+    <value>Xray-core downloaded. It will take effect on next app launch.</value>
+  </data>
+  <data name="StatusUpdatingGeo" xml:space="preserve">
+    <value>Updating Geo data files</value>
+  </data>
+  <data name="StatusGeoDownloaded" xml:space="preserve">
+    <value>Download complete, replacing Geo data files</value>
+  </data>
+  <data name="StatusGeoApplied" xml:space="preserve">
+    <value>Geo data files updated. New rules will take effect on next launch or manual reconnect.</value>
+  </data>
+  <data name="StatusCheckingUpdate" xml:space="preserve">
+    <value>Checking for app updates</value>
+  </data>
+  <data name="StatusUpdateNotSupported" xml:space="preserve">
+    <value>Auto-update is not supported in the current run mode. Please download the installer or portable version and replace manually.</value>
+  </data>
+  <data name="StatusAlreadyLatest" xml:space="preserve">
+    <value>Already on the latest version</value>
+  </data>
+  <data name="TitleNewVersion" xml:space="preserve">
+    <value>New Version Found</value>
+  </data>
+  <data name="MsgNewVersion" xml:space="preserve">
+    <value>Orayo {0} is available. Download and restart to update now?</value>
+  </data>
+  <data name="StatusUpdateCancelled" xml:space="preserve">
+    <value>App update cancelled</value>
+  </data>
+  <data name="StatusDownloadingUpdate" xml:space="preserve">
+    <value>Downloading app update: {0}%</value>
+  </data>
+  <data name="StatusUpdateDownloaded" xml:space="preserve">
+    <value>Download complete, restarting app</value>
+  </data>
+  <data name="ErrLoopbackNotFound" xml:space="preserve">
+    <value>Loopback manager not found: {0}</value>
+  </data>
+  <data name="StatusLoopbackOpened" xml:space="preserve">
+    <value>Loopback manager opened</value>
+  </data>
+  <data name="ErrLoopbackFailed" xml:space="preserve">
+    <value>Failed to open loopback manager: {0}</value>
+  </data>
+  <data name="ErrAutoStartFailed" xml:space="preserve">
+    <value>Failed to set auto-start</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+
+  <!-- MoreWindow: Language -->
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="TitleLanguageChange" xml:space="preserve">
+    <value>Switch Language</value>
+  </data>
+  <data name="MsgConfirmLanguageChange" xml:space="preserve">
+    <value>Switching language requires an app restart. Continue?</value>
+  </data>
+
+  <!-- ServerEditorWindow -->
+  <data name="SectionBasic" xml:space="preserve">
+    <value>Basic Info</value>
+  </data>
+  <data name="LabelName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="PlaceholderName" xml:space="preserve">
+    <value>e.g. JP-01</value>
+  </data>
+  <data name="LabelProtocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="LabelAddress" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="LabelPort" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="SectionProtocol" xml:space="preserve">
+    <value>Protocol Settings</value>
+  </data>
+  <data name="LabelPassword" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="LabelEncryption" xml:space="preserve">
+    <value>Encryption</value>
+  </data>
+  <data name="PlaceholderEncryption" xml:space="preserve">
+    <value>e.g. aes-128-gcm</value>
+  </data>
+  <data name="LabelNetwork" xml:space="preserve">
+    <value>Transport</value>
+  </data>
+  <data name="SectionTransport" xml:space="preserve">
+    <value>Transport Security</value>
+  </data>
+  <data name="LabelType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="LabelAllowInsecure" xml:space="preserve">
+    <value>Allow Insecure Certificate</value>
+  </data>
+  <data name="SectionAdvanced" xml:space="preserve">
+    <value>Advanced Config</value>
+  </data>
+
+  <!-- Dns/Route Settings Windows -->
+  <data name="ConfigHint" xml:space="preserve">
+    <value>Changes take effect immediately after saving. Rules reference:</value>
+  </data>
+
+  <!-- Common errors -->
+  <data name="ErrConnectionFailed" xml:space="preserve">
+    <value>Connection Failed</value>
+  </data>
+  <data name="ErrConnectionFailedMsg" xml:space="preserve">
+    <value>Connection failed.</value>
+  </data>
+  <data name="ErrTunModeError" xml:space="preserve">
+    <value>TUN Mode Error</value>
+  </data>
+  <data name="ErrCannotStartTunBroker" xml:space="preserve">
+    <value>Failed to start TUN privilege broker.</value>
+  </data>
+  <data name="ErrWintunNotFound" xml:space="preserve">
+    <value>wintun.dll not found.
+Path: {0}</value>
+  </data>
+  <data name="ErrTunStartFailed" xml:space="preserve">
+    <value>TUN start failed.</value>
+  </data>
+  <data name="ErrXrayStartFailed" xml:space="preserve">
+    <value>xray start failed.</value>
+  </data>
+
+  <!-- CoreUpdateService -->
+  <data name="ErrXrayNotFound" xml:space="preserve">
+    <value>xray.exe not found</value>
+  </data>
+  <data name="ErrCannotStartXray" xml:space="preserve">
+    <value>Failed to start xray.exe</value>
+  </data>
+  <data name="UnknownVersion" xml:space="preserve">
+    <value>Unknown version</value>
+  </data>
+  <data name="ErrXrayNotInPackage" xml:space="preserve">
+    <value>xray.exe not found in the Xray update package.</value>
+  </data>
+  <data name="ErrUpdateVersionLower" xml:space="preserve">
+    <value>Update version {0} is lower than current version {1}. Update skipped.</value>
+  </data>
+  <data name="ErrDownloadEmpty" xml:space="preserve">
+    <value>Downloaded file is empty.</value>
+  </data>
+
+  <!-- XrayService logs -->
+  <data name="ErrXrayExeNotFound" xml:space="preserve">
+    <value>xray.exe not found.
+Path: {0}</value>
+  </data>
+  <data name="LogError" xml:space="preserve">
+    <value>[Error] {0}</value>
+  </data>
+  <data name="LogStart" xml:space="preserve">
+    <value>[Start] {0}</value>
+  </data>
+  <data name="LogConfig" xml:space="preserve">
+    <value>[Config] {0}</value>
+  </data>
+  <data name="ErrXrayExitImmediately" xml:space="preserve">
+    <value>xray exited immediately (exit code {0})</value>
+  </data>
+  <data name="LogStartFailed" xml:space="preserve">
+    <value>[Error] Start failed: {0}</value>
+  </data>
+  <data name="LogException" xml:space="preserve">
+    <value>[Exception] {0}</value>
+  </data>
+  <data name="LogStopped" xml:space="preserve">
+    <value>[Stopped]</value>
+  </data>
+  <data name="WarnJobObjectFailed" xml:space="preserve">
+    <value>[Warning] Failed to create job object. Cannot bind process lifecycle.</value>
+  </data>
+  <data name="WarnJobObjectLimit" xml:space="preserve">
+    <value>[Warning] Failed to set job object limits. xray may not exit with the app.</value>
+  </data>
+  <data name="WarnJobObjectAssign" xml:space="preserve">
+    <value>[Warning] Failed to assign xray to job object.</value>
+  </data>
+  <data name="LogXrayExited" xml:space="preserve">
+    <value>[xray process exited]</value>
+  </data>
+
+  <!-- PortConflictService -->
+  <data name="ErrPortConflictLegacy" xml:space="preserve">
+    <value>Local port {0} is occupied by a leftover Orayo xray.exe. Auto-cleanup failed: {1}</value>
+  </data>
+  <data name="ErrPortConflict" xml:space="preserve">
+    <value>Local port {0} is already in use.
+Process: {1} (PID {2})
+Path: {3}</value>
+  </data>
+  <data name="ErrPortConflictUnknown" xml:space="preserve">
+    <value>Local port {0} is in use and the occupying process could not be identified: {1}</value>
+  </data>
+
+  <!-- TunBrokerClient -->
+  <data name="ErrCannotDetermineExePath" xml:space="preserve">
+    <value>Cannot determine Orayo.exe path.</value>
+  </data>
+  <data name="ErrUacCancelled" xml:space="preserve">
+    <value>UAC authorization cancelled.</value>
+  </data>
+  <data name="ErrTunBrokerStartFailed" xml:space="preserve">
+    <value>Failed to start TUN privilege broker: </value>
+  </data>
+  <data name="ErrTunBrokerNoResponse" xml:space="preserve">
+    <value>TUN privilege broker did not respond after startup.</value>
+  </data>
+  <data name="ErrTunBrokerNoResponseWith" xml:space="preserve">
+    <value>TUN privilege broker did not respond: </value>
+  </data>
+  <data name="ErrTunBrokerXrayFailed" xml:space="preserve">
+    <value>TUN privilege broker failed to start xray.</value>
+  </data>
+  <data name="ErrTunBrokerEmptyResponse" xml:space="preserve">
+    <value>Privilege broker returned an empty response.</value>
+  </data>
+
+  <!-- TunBrokerHost -->
+  <data name="ErrTunBrokerError" xml:space="preserve">
+    <value>TUN Broker Error</value>
+  </data>
+  <data name="ErrRequestEmpty" xml:space="preserve">
+    <value>Request is empty.</value>
+  </data>
+  <data name="ErrRequestInvalid" xml:space="preserve">
+    <value>Request is invalid.</value>
+  </data>
+  <data name="ErrUnknownCommand" xml:space="preserve">
+    <value>Unknown command: {0}</value>
+  </data>
+  <data name="ErrMissingConfig" xml:space="preserve">
+    <value>Missing configuration.</value>
+  </data>
+
+  <!-- DnsPresetService -->
+  <data name="ErrDnsJsonEmpty" xml:space="preserve">
+    <value>DNS JSON cannot be empty.</value>
+  </data>
+  <data name="ErrDnsJsonNotObject" xml:space="preserve">
+    <value>DNS JSON must be an object.</value>
+  </data>
+  <data name="ErrDnsJsonMissingServers" xml:space="preserve">
+    <value>DNS JSON is missing the servers array.</value>
+  </data>
+  <data name="ErrDnsServerInvalid" xml:space="preserve">
+    <value>DNS server #{0} is invalid.</value>
+  </data>
+
+  <!-- RouteRulePresetService -->
+  <data name="ErrRoutingJsonEmpty" xml:space="preserve">
+    <value>Routing JSON cannot be empty.</value>
+  </data>
+  <data name="ErrRoutingJsonNotObject" xml:space="preserve">
+    <value>Routing JSON must be an object.</value>
+  </data>
+  <data name="ErrRoutingJsonMissingRules" xml:space="preserve">
+    <value>Routing JSON is missing the rules array.</value>
+  </data>
+  <data name="ErrRoutingRuleNotObject" xml:space="preserve">
+    <value>Rule #{0} must be an object.</value>
+  </data>
+  <data name="ErrRoutingRuleType" xml:space="preserve">
+    <value>Rule #{0} type only supports "field" currently.</value>
+  </data>
+  <data name="ErrRoutingRuleMissingTag" xml:space="preserve">
+    <value>Rule #{0} is missing outboundTag.</value>
+  </data>
+
+  <!-- Editor errors -->
+  <data name="ErrMonacoInitFailed" xml:space="preserve">
+    <value>Monaco editor initialization failed: {0}</value>
+  </data>
+  <data name="ErrMonacoLoadFailed" xml:space="preserve">
+    <value>Monaco page load failed: {0}</value>
+  </data>
+  <data name="ErrEditorTimeout" xml:space="preserve">
+    <value>Editor initialization timed out.</value>
+  </data>
+  <data name="ErrWebView2NotReady" xml:space="preserve">
+    <value>WebView2 is not initialized yet.</value>
+  </data>
+
+  <!-- Tray icon -->
+  <data name="TrayShowOrayo" xml:space="preserve">
+    <value>Show Orayo</value>
+  </data>
+  <data name="TrayExit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+</root>

@@ -40,7 +40,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private bool _isStateDirty;
     private bool _isRestoringStartupSession;
     private bool _isLatencyRefreshing;
-    private string _routingModeText = "规则路由";
+    private string _routingModeText = Strings.RoutingRuleMode;
     private CancellationTokenSource? _latencyRefreshCts;
 
     private static readonly Brush LatencyDeepGreenBrush = CreateBrush(0x00, 0x82, 0x35);
@@ -117,23 +117,23 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    public string StatusText => IsRunning && _activeServer is not null ? $"运行中: {_activeServer.Name}" : "未连接";
-    public string SelectedSummary => SelectedServer is null ? "未选择节点" : $"当前选中: {SelectedServer.Name}";
+    public string StatusText => IsRunning && _activeServer is not null ? string.Format(Strings.StatusRunning, _activeServer.Name) : Strings.StatusDisconnected;
+    public string SelectedSummary => SelectedServer is null ? Strings.StatusNotSelected : string.Format(Strings.StatusCurrentSelected, SelectedServer.Name);
     public Visibility IsEmptyHintVisible => Servers.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     public bool IsLatencyRefreshEnabled => !_isLatencyRefreshing && Servers.Count > 0;
     public bool IsTunToggleEnabled => !_isApplyingSelection;
     public bool IsRouteSettingsEnabled => !_isApplyingSelection;
     public bool IsSystemProxyToggleEnabled => !IsTunMode && !_isApplyingSelection;
-    public string TunHintText => IsTunMode ? "TUN 模式参考 XrayUI-dev：当前节点会持续运行，切节点时自动重建 TUN 会话。" : "关闭 TUN 时始终维持本地代理入口；系统代理开关只影响 Windows 代理接管。";
+    public string TunHintText => IsTunMode ? Strings.TunHintOn : Strings.TunHintOff;
     public string RouteSettingsSummary
     {
         get
         {
             var ruleCount = RouteRulePresetService.CountRules(_settings.RoutingRuleJson);
-            var ruleText = ruleCount > 0 ? $"，规则 {ruleCount} 条" : string.Empty;
+            var ruleText = ruleCount > 0 ? string.Format(Strings.RouteRuleCount, ruleCount) : string.Empty;
             return IsTunMode
-                ? $"当前：TUN + {RoutingModeText}{ruleText}。系统代理设置在 TUN 模式下不生效。"
-                : $"当前：{RoutingModeText}，系统代理{(IsSystemProxyEnabled ? "已接管" : "未接管")}{ruleText}。";
+                ? string.Format(Strings.RouteSummaryTun, RoutingModeText, ruleText)
+                : string.Format(Strings.RouteSummaryNormal, RoutingModeText, IsSystemProxyEnabled ? Strings.ProxyEnabled : Strings.ProxyDisabled, ruleText);
         }
     }
 
@@ -225,7 +225,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         IsTunMode = _settings.IsTunMode;
         _isTunInternalUpdate = false;
         IsSystemProxyEnabled = _settings.IsSystemProxyEnabled;
-        RoutingModeText = string.Equals(_settings.RoutingMode, "global", StringComparison.OrdinalIgnoreCase) ? "全局代理" : "规则路由";
+        RoutingModeText = string.Equals(_settings.RoutingMode, "global", StringComparison.OrdinalIgnoreCase) ? Strings.GlobalProxyMode : Strings.RoutingRuleMode;
+        RoutingModeComboBox.Items.Clear();
+        RoutingModeComboBox.Items.Add(Strings.RoutingRuleMode);
+        RoutingModeComboBox.Items.Add(Strings.GlobalProxyMode);
         RoutingModeComboBox.SelectedItem = RoutingModeText;
         SocksPortTextBox.Text = _settings.LocalSocksPort.ToString();
         HttpPortTextBox.Text = _settings.LocalHttpPort.ToString();
@@ -335,7 +338,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (result.TimedOut || result.Milliseconds is null)
         {
-            server.LatencyBadgeText = "超时";
+            server.LatencyBadgeText = Strings.LatencyTimeout;
             server.LatencyBadgeBackground = LatencyRedBrush;
             server.LatencyBadgeForeground = LatencyWhiteForegroundBrush;
             server.LatencyBadgeVisibility = Visibility.Visible;
@@ -380,7 +383,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (IsTunMode)
         {
-            await ShowMessageAsync("无法检测", "请关闭 TUN 后测试延迟");
+            await ShowMessageAsync(Strings.ErrCannotTest, Strings.ErrCloseTunForTest);
             return;
         }
 
@@ -424,7 +427,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _isTunInternalUpdate = true;
             IsTunMode = _settings.IsTunMode;
             _isTunInternalUpdate = false;
-            await ShowTunErrorAsync(string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError) ? "无法启动 TUN 权限代理。" : _runtime.TunBrokerLastError);
+            await ShowTunErrorAsync(string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError) ? Strings.ErrCannotStartTunBroker : _runtime.TunBrokerLastError);
             return;
         }
 
@@ -447,7 +450,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
-            await ShowTunErrorAsync(string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError) ? "无法启动 TUN 权限代理。" : _runtime.TunBrokerLastError);
+            await ShowTunErrorAsync(string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError) ? Strings.ErrCannotStartTunBroker : _runtime.TunBrokerLastError);
             return;
         }
 
@@ -455,13 +458,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (!result.Success)
         {
             MarkStateDirty();
-            if (string.Equals(result.ErrorTitle, "TUN 模式错误", StringComparison.Ordinal))
+            if (string.Equals(result.ErrorTitle, Strings.ErrTunModeError, StringComparison.Ordinal))
             {
-                await ShowTunErrorAsync(result.ErrorMessage ?? "连接失败。");
+                await ShowTunErrorAsync(result.ErrorMessage ?? Strings.ErrConnectionFailedMsg);
             }
             else
             {
-                await ShowMessageAsync(result.ErrorTitle ?? "连接失败", result.ErrorMessage ?? "连接失败。");
+                await ShowMessageAsync(result.ErrorTitle ?? Strings.ErrConnectionFailed, result.ErrorMessage ?? Strings.ErrConnectionFailedMsg);
             }
             return;
         }
@@ -472,7 +475,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private async Task FallbackFromStartupTunAsync(ServerEntry server)
     {
         var errorMessage = string.IsNullOrWhiteSpace(_runtime.TunBrokerLastError)
-            ? "无法启动 TUN 权限代理。"
+            ? Strings.ErrCannotStartTunBroker
             : _runtime.TunBrokerLastError;
 
         _settings.IsTunMode = false;
@@ -484,8 +487,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             MarkStateDirty();
             await ShowMessageAsync(
-                fallbackResult.ErrorTitle ?? "连接失败",
-                fallbackResult.ErrorMessage ?? "连接失败。");
+                fallbackResult.ErrorTitle ?? Strings.ErrConnectionFailed,
+                fallbackResult.ErrorMessage ?? Strings.ErrConnectionFailedMsg);
             return;
         }
 
@@ -522,7 +525,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var newMode = selected == "全局代理" ? "global" : "smart";
+        var newMode = selected == Strings.GlobalProxyMode ? "global" : "smart";
         if (string.Equals(_settings.RoutingMode, newMode, StringComparison.OrdinalIgnoreCase))
         {
             RoutingModeText = selected;
@@ -727,7 +730,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var text = await ReadClipboardTextAsync();
         if (string.IsNullOrWhiteSpace(text))
         {
-            await ShowMessageAsync("没有可导入内容", "剪贴板里没有文本节点链接。");
+            await ShowMessageAsync(Strings.MsgNoClipboard, Strings.MsgNoClipboardContent);
             return;
         }
 
@@ -759,7 +762,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         if (count == 0)
         {
-            await ShowMessageAsync("导入完成", "没有识别到可导入的新节点。");
+            await ShowMessageAsync(Strings.MsgImportDone, Strings.MsgNoNewNodes);
             return;
         }
 
@@ -799,7 +802,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var window = new ServerEditorWindow(this, server, "编辑节点", "保存");
+        var window = new ServerEditorWindow(this, server, Strings.TitleEditServer, Strings.ButtonSave);
         var replacement = await window.ShowModalAsync();
         if (replacement is null)
         {
@@ -831,7 +834,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        if (!await ConfirmAsync("删除节点", $"确认删除节点“{server.Name}”？"))
+        if (!await ConfirmAsync(Strings.TitleDeleteServer, string.Format(Strings.MsgConfirmDelete, server.Name)))
         {
             return;
         }
@@ -839,7 +842,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var wasActive = ReferenceEquals(_activeServer, server);
         if (wasActive)
         {
-            await ShowMessageAsync("无法删除", "正在使用的节点无法删除，请先切换到其他节点。");
+            await ShowMessageAsync(Strings.ErrCannotDelete, Strings.ErrCannotDeleteActive);
             return;
         }
 
@@ -880,20 +883,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var link = NodeLinkSerializer.ToLink(server);
         if (string.IsNullOrWhiteSpace(link))
         {
-            await ShowMessageAsync("无法分享", "当前节点协议暂不支持导出分享链接。");
+            await ShowMessageAsync(Strings.ErrCannotShare, Strings.ErrCannotShareProtocol);
             return;
         }
 
         if (TryCopyShareLink(link))
         {
-            await ShowMessageAsync("已复制", "分享链接已复制到剪贴板。");
+            await ShowMessageAsync(Strings.MsgCopied, Strings.MsgShareLinkCopied);
             return;
         }
 
         await Task.Delay(120);
         if (TryCopyShareLink(link))
         {
-            await ShowMessageAsync("已复制", "分享链接已复制到剪贴板。");
+            await ShowMessageAsync(Strings.MsgCopied, Strings.MsgShareLinkCopied);
             return;
         }
 
@@ -1002,8 +1005,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         var dialog = new ContentDialog
         {
-            Title = string.IsNullOrWhiteSpace(serverName) ? "分享链接" : $"分享链接 - {serverName}",
-            PrimaryButtonText = "关闭",
+            Title = string.IsNullOrWhiteSpace(serverName) ? Strings.TitleShareLink : $"{Strings.TitleShareLink} - {serverName}",
+            PrimaryButtonText = Strings.ButtonClose,
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = ((FrameworkElement)Content).XamlRoot,
             Content = new StackPanel
@@ -1013,7 +1016,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 {
                     new TextBlock
                     {
-                        Text = "写入剪贴板失败，请手动复制下面的分享链接。",
+                        Text = Strings.MsgClipboardFailed,
                         TextWrapping = TextWrapping.Wrap
                     },
                     new TextBox
@@ -1039,7 +1042,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             Title = title,
             Content = message,
-            CloseButtonText = "确定",
+            CloseButtonText = Strings.ButtonOK,
             XamlRoot = ((FrameworkElement)Content).XamlRoot
         };
         await dialog.ShowAsync();
@@ -1053,7 +1056,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             {
                 Forms.MessageBox.Show(
                     message,
-                    "TUN 模式错误",
+                    Strings.ErrTunModeError,
                     Forms.MessageBoxButtons.OK,
                     Forms.MessageBoxIcon.Error);
             }
@@ -1069,8 +1072,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             Title = title,
             Content = message,
-            PrimaryButtonText = "确定",
-            CloseButtonText = "取消",
+            PrimaryButtonText = Strings.ButtonOK,
+            CloseButtonText = Strings.ButtonCancel,
             XamlRoot = ((FrameworkElement)Content).XamlRoot
         };
         return await dialog.ShowAsync() == ContentDialogResult.Primary;

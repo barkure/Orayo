@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using Orayo;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
@@ -46,7 +47,7 @@ public static class CoreUpdateService
     {
         if (!File.Exists(XrayExePath))
         {
-            return new XrayVersionInfo("未找到 xray.exe", string.Empty, null, "未找到 xray.exe");
+            return new XrayVersionInfo(Strings.ErrXrayNotFound, string.Empty, null, Strings.ErrXrayNotFound);
         }
 
         return await ReadXrayVersionInfoAsync(XrayExePath);
@@ -67,7 +68,7 @@ public static class CoreUpdateService
 
         if (process is null)
         {
-            return new XrayVersionInfo("无法启动 xray.exe", string.Empty, null, "无法启动 xray.exe");
+            return new XrayVersionInfo(Strings.ErrCannotStartXray, string.Empty, null, Strings.ErrCannotStartXray);
         }
 
         var outputTask = process.StandardOutput.ReadToEndAsync();
@@ -90,7 +91,7 @@ public static class CoreUpdateService
         }
 
         var error = (await errorTask).Trim();
-        return new XrayVersionInfo(string.IsNullOrWhiteSpace(error) ? "未知版本" : error, string.Empty, null, error);
+        return new XrayVersionInfo(string.IsNullOrWhiteSpace(error) ? Strings.UnknownVersion : error, string.Empty, null, error);
     }
 
     public sealed class StagedXrayCoreUpdate : IDisposable
@@ -143,7 +144,7 @@ public static class CoreUpdateService
             var extractedXray = Directory.GetFiles(tempDir, "xray.exe", SearchOption.AllDirectories).FirstOrDefault();
             if (string.IsNullOrWhiteSpace(extractedXray))
             {
-                throw new InvalidOperationException("Xray 更新包中未找到 xray.exe。");
+                throw new InvalidOperationException(Strings.ErrXrayNotInPackage);
             }
 
             if (File.Exists(XrayExePath))
@@ -152,7 +153,7 @@ public static class CoreUpdateService
                 var extractedVersion = await ReadXrayVersionInfoAsync(extractedXray);
                 if (CompareVersionStrings(extractedVersion.Version, currentVersion.Version) < 0)
                 {
-                    throw new InvalidOperationException($"检测到更新版本 {extractedVersion.Version} 低于当前版本 {currentVersion.Version}，已跳过更新");
+                    throw new InvalidOperationException(string.Format(Strings.ErrUpdateVersionLower, extractedVersion.Version, currentVersion.Version));
                 }
             }
 
@@ -307,7 +308,7 @@ public static class CoreUpdateService
         await input.CopyToAsync(output, cts.Token);
         if (output.Length == 0)
         {
-            throw new InvalidOperationException("下载文件为空。");
+            throw new InvalidOperationException(Strings.ErrDownloadEmpty);
         }
     }
 

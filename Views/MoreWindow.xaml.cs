@@ -8,6 +8,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Graphics;
+using Orayo;
 using Orayo.Helpers;
 using Orayo.Services;
 using Orayo.Models;
@@ -47,7 +48,7 @@ public sealed partial class MoreWindow : Window
         InitializeComponent();
         WindowThemeHelper.Apply(this);
 
-        const string title = "更多";
+        var title = Strings.TitleMore;
         AppWindow.Title = title;
         AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
         TitleBarTextBlock.Text = title;
@@ -67,6 +68,7 @@ public sealed partial class MoreWindow : Window
         Closed += OnClosed;
         RefreshAppVersion();
         InitializeSettings();
+        InitializeLanguageSelector();
         _ = RefreshVersionAsync();
     }
 
@@ -75,7 +77,7 @@ public sealed partial class MoreWindow : Window
         var manager = CreateUpdateManager();
         var version = FormatDisplayVersion(manager.CurrentVersion?.ToString() ?? ThisAssemblyVersion());
         var mode = manager.IsPortable ? "Portable" : manager.IsInstalled ? "Installer" : "Development";
-        AppVersionTextBlock.Text = $"当前版本：{version} ({mode})";
+        AppVersionTextBlock.Text = string.Format(Strings.AppVersionFormat, version, mode);
     }
 
     private void InitializeSettings()
@@ -106,52 +108,52 @@ public sealed partial class MoreWindow : Window
 
     private async void UpdateCoreButton_Click(object sender, RoutedEventArgs e)
     {
-        await RunActionAsync("正在下载 Xray-core", async () =>
+        await RunActionAsync(Strings.StatusDownloadingXray, async () =>
         {
             using var update = await CoreUpdateService.StageXrayCoreUpdateAsync();
-            StatusTextBlock.Text = "下载完成，正在保存待应用更新";
+            StatusTextBlock.Text = Strings.StatusXrayDownloaded;
             CoreUpdateService.StagePendingXrayCoreUpdate(update);
             await RefreshVersionAsync();
-        }, "Xray-core 已下载，将在下次启动应用时生效");
+        }, Strings.StatusXrayApplied);
     }
 
     private async void UpdateGeofilesButton_Click(object sender, RoutedEventArgs e)
     {
-        await RunActionAsync("正在更新 Geo 数据文件", async () =>
+        await RunActionAsync(Strings.StatusUpdatingGeo, async () =>
         {
             using var update = await CoreUpdateService.StageGeofilesUpdateAsync();
-            StatusTextBlock.Text = "下载完成，正在替换 Geo 数据文件";
+            StatusTextBlock.Text = Strings.StatusGeoDownloaded;
             CoreUpdateService.ApplyGeofilesUpdate(update);
-        }, "Geo 数据文件已更新，新的规则将在下次启动或手动重连后生效");
+        }, Strings.StatusGeoApplied);
     }
 
     private async void CheckAppUpdateButton_Click(object sender, RoutedEventArgs e)
     {
         SetBusy(true);
-        StatusTextBlock.Text = "正在检查应用更新";
+        StatusTextBlock.Text = Strings.StatusCheckingUpdate;
         try
         {
             var manager = CreateUpdateManager();
             if (!manager.IsInstalled)
             {
-                StatusTextBlock.Text = "当前运行方式不支持自动更新，请下载安装包或便携版新版本后替换";
+                StatusTextBlock.Text = Strings.StatusUpdateNotSupported;
                 return;
             }
 
             var update = await manager.CheckForUpdatesAsync();
             if (update is null)
             {
-                StatusTextBlock.Text = "当前已是最新版本";
+                StatusTextBlock.Text = Strings.StatusAlreadyLatest;
                 return;
             }
 
             var targetVersion = FormatDisplayVersion(update.TargetFullRelease.Version.ToString());
             var confirmed = await ConfirmAsync(
-                "发现新版本",
-                $"发现 Orayo {targetVersion}，是否现在下载并重启完成更新？");
+                Strings.TitleNewVersion,
+                string.Format(Strings.MsgNewVersion, targetVersion));
             if (!confirmed)
             {
-                StatusTextBlock.Text = "已取消应用更新";
+                StatusTextBlock.Text = Strings.StatusUpdateCancelled;
                 return;
             }
 
@@ -159,11 +161,11 @@ public sealed partial class MoreWindow : Window
                 update,
                 progress => DispatcherQueue.TryEnqueue(() =>
                 {
-                    StatusTextBlock.Text = $"正在下载应用更新：{progress}%";
+                    StatusTextBlock.Text = string.Format(Strings.StatusDownloadingUpdate, progress);
                 }),
                 CancellationToken.None);
 
-            StatusTextBlock.Text = "下载完成，正在重启应用";
+            StatusTextBlock.Text = Strings.StatusUpdateDownloaded;
             await _prepareCoreUpdateAsync();
             if (Application.Current is App app)
             {
@@ -216,7 +218,7 @@ public sealed partial class MoreWindow : Window
             var utilityPath = Path.Combine(AppContext.BaseDirectory, LoopbackUtilityRelativePath);
             if (!File.Exists(utilityPath))
             {
-                StatusTextBlock.Text = $"找不到网络回环管理器：{utilityPath}";
+                StatusTextBlock.Text = string.Format(Strings.ErrLoopbackNotFound, utilityPath);
                 return;
             }
 
@@ -225,11 +227,11 @@ public sealed partial class MoreWindow : Window
                 FileName = utilityPath,
                 UseShellExecute = true
             });
-            StatusTextBlock.Text = "已打开网络回环管理器";
+            StatusTextBlock.Text = Strings.StatusLoopbackOpened;
         }
         catch (Exception ex)
         {
-            StatusTextBlock.Text = $"打开网络回环管理器失败：{ex.Message}";
+            StatusTextBlock.Text = string.Format(Strings.ErrLoopbackFailed, ex.Message);
         }
     }
 
@@ -249,7 +251,7 @@ public sealed partial class MoreWindow : Window
             _settings.IsAutoStartEnabled = previousValue;
             AutoStartToggleButton.IsChecked = previousValue;
             UpdateAutoStartButtonText();
-            StatusTextBlock.Text = "写入开机自启失败";
+            StatusTextBlock.Text = Strings.ErrAutoStartFailed;
             return;
         }
 
@@ -258,7 +260,7 @@ public sealed partial class MoreWindow : Window
 
     private void UpdateAutoStartButtonText()
     {
-        AutoStartToggleButton.Content = _settings.IsAutoStartEnabled ? "已开启" : "开启";
+        AutoStartToggleButton.Content = _settings.IsAutoStartEnabled ? Strings.AutoStartEnabled : Strings.AutoStartDisabled;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
@@ -277,7 +279,7 @@ public sealed partial class MoreWindow : Window
         var version = typeof(App).Assembly.GetName().Version;
         if (version is null)
         {
-            return "未知";
+            return Strings.Unknown;
         }
 
         return version.Revision > 0
@@ -287,7 +289,7 @@ public sealed partial class MoreWindow : Window
 
     private static string FormatDisplayVersion(string version)
     {
-        if (string.IsNullOrWhiteSpace(version) || string.Equals(version, "未知", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(version) || string.Equals(version, Strings.Unknown, StringComparison.OrdinalIgnoreCase))
         {
             return version;
         }
@@ -313,8 +315,8 @@ public sealed partial class MoreWindow : Window
         {
             Title = title,
             Content = message,
-            PrimaryButtonText = "更新并重启",
-            CloseButtonText = "取消",
+            PrimaryButtonText = Strings.ButtonUpdateAndRestart,
+            CloseButtonText = Strings.ButtonCancel,
             XamlRoot = ((FrameworkElement)Content).XamlRoot
         };
 
@@ -339,6 +341,69 @@ public sealed partial class MoreWindow : Window
         {
             SetWindowLong(ownedHwnd, GWL_HWNDPARENT, ownerHwnd);
         }
+    }
+
+    private void InitializeLanguageSelector()
+    {
+        var currentLang = _settings.Language ?? "zh-Hans";
+        foreach (var item in LanguageComboBox.Items)
+        {
+            if (item is ComboBoxItem cbi && string.Equals(cbi.Tag as string, currentLang, StringComparison.OrdinalIgnoreCase))
+            {
+                LanguageComboBox.SelectedItem = cbi;
+                return;
+            }
+        }
+        LanguageComboBox.SelectedIndex = 0;
+    }
+
+    private async void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || LanguageComboBox.SelectedItem is not ComboBoxItem selected)
+        {
+            return;
+        }
+
+        var newLang = selected.Tag as string ?? "zh-Hans";
+        if (string.Equals(_settings.Language, newLang, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var confirmed = await ConfirmLanguageChangeAsync();
+        if (!confirmed)
+        {
+            // Revert selection
+            _isInitializing = true;
+            InitializeLanguageSelector();
+            _isInitializing = false;
+            return;
+        }
+
+        _settings.Language = newLang;
+        await _store.SaveSettingsAsync(_settings);
+
+        if (Application.Current is App app)
+        {
+            await app.PrepareForRestartAsync();
+        }
+
+        System.Windows.Forms.Application.Restart();
+        Environment.Exit(0);
+    }
+
+    private async Task<bool> ConfirmLanguageChangeAsync()
+    {
+        var dialog = new ContentDialog
+        {
+            Title = Strings.TitleLanguageChange,
+            Content = Strings.MsgConfirmLanguageChange,
+            PrimaryButtonText = Strings.ButtonOK,
+            CloseButtonText = Strings.ButtonCancel,
+            XamlRoot = ((FrameworkElement)Content).XamlRoot
+        };
+
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 }
 

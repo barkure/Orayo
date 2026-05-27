@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Orayo;
 
 namespace Orayo.Services;
 
@@ -54,15 +55,15 @@ internal static class PortConflictService
                 }
                 catch (Exception ex)
                 {
-                    return $"本地端口 {port} 被遗留的 Orayo xray.exe 占用，自动清理失败：{ex.Message}";
+                    return string.Format(Strings.ErrPortConflictLegacy, port, ex.Message);
                 }
             }
 
-            return $"本地端口 {port} 已被占用。\n进程：{processName} (PID {process.Id})\n路径：{processPath ?? "未知"}";
+            return string.Format(Strings.ErrPortConflict, port, processName, process.Id, processPath ?? Strings.Unknown);
         }
         catch (Exception ex)
         {
-            return $"本地端口 {port} 已被占用，且无法识别占用进程：{ex.Message}";
+            return string.Format(Strings.ErrPortConflictUnknown, port, ex.Message);
         }
     }
 

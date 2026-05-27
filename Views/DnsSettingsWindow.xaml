@@ -4,8 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:Orayo.Helpers"
     mc:Ignorable="d"
-    Title="DNS 设置">
+    Title="{local:Localize Key=TitleDNS}">
 
     <Grid Padding="24,8,20,20" RowSpacing="8">
         <Grid.RowDefinitions>
@@ -21,7 +22,7 @@
 
         <StackPanel Grid.Row="1" Spacing="4">
             <StackPanel Orientation="Horizontal" Spacing="4">
-                <TextBlock Text="配置更改保存后立即生效，规则可参考" Opacity="0.72" VerticalAlignment="Center" />
+                <TextBlock Text="{local:Localize Key=ConfigHint}" Opacity="0.72" VerticalAlignment="Center" />
                 <HyperlinkButton Content="Project X - DNS"
                                  NavigateUri="https://xtls.github.io/config/dns.html"
                                  Padding="0"
@@ -45,13 +46,13 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="格式化" MinWidth="88" Click="FormatButton_Click" />
-                <Button Content="重置" MinWidth="88" Click="RestoreDefaultsButton_Click" />
+                <Button Content="{local:Localize Key=ButtonFormat}" MinWidth="88" Click="FormatButton_Click" />
+                <Button Content="{local:Localize Key=ButtonReset}" MinWidth="88" Click="RestoreDefaultsButton_Click" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Style="{StaticResource AccentButtonStyle}" Content="保存" MinWidth="96" Click="SaveButton_Click" />
-                <Button Content="取消" MinWidth="96" Click="CancelButton_Click" />
+                <Button Style="{StaticResource AccentButtonStyle}" Content="{local:Localize Key=ButtonSave}" MinWidth="96" Click="SaveButton_Click" />
+                <Button Content="{local:Localize Key=ButtonCancel}" MinWidth="96" Click="CancelButton_Click" />
             </StackPanel>
         </Grid>
     </Grid>

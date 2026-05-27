@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:Orayo.Helpers"
     mc:Ignorable="d">
 
     <Grid Padding="24,24,8,24" RowSpacing="16">
@@ -19,24 +20,24 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,16,0">
             <StackPanel Spacing="12" MinWidth="420">
-                <TextBlock Text="基础信息" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                <TextBox x:Name="NameTextBox" Header="名称" PlaceholderText="例如：JP-01" />
-                <ComboBox x:Name="ProtocolComboBox" Header="协议" SelectionChanged="ProtocolComboBox_SelectionChanged">
+                <TextBlock Text="{local:Localize Key=SectionBasic}" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                <TextBox x:Name="NameTextBox" Header="{local:Localize Key=LabelName}" PlaceholderText="{local:Localize Key=PlaceholderName}" />
+                <ComboBox x:Name="ProtocolComboBox" Header="{local:Localize Key=LabelProtocol}" SelectionChanged="ProtocolComboBox_SelectionChanged">
                     <ComboBoxItem Content="Shadowsocks" Tag="ss" />
                     <ComboBoxItem Content="VMess" Tag="vmess" />
                     <ComboBoxItem Content="VLESS" Tag="vless" />
                     <ComboBoxItem Content="Trojan" Tag="trojan" />
                     <ComboBoxItem Content="Hysteria 2" Tag="hysteria2" />
                 </ComboBox>
-                <TextBox x:Name="HostTextBox" Header="地址" PlaceholderText="server.example.com" />
-                <NumberBox x:Name="PortNumberBox" Header="端口" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact" />
+                <TextBox x:Name="HostTextBox" Header="{local:Localize Key=LabelAddress}" PlaceholderText="server.example.com" />
+                <NumberBox x:Name="PortNumberBox" Header="{local:Localize Key=LabelPort}" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact" />
 
-                <TextBlock x:Name="ProtocolSettingsTitle" Text="协议设置" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-                <PasswordBox x:Name="PasswordTextBox" Header="密码" />
-                <TextBox x:Name="EncryptionTextBox" Header="加密方式" PlaceholderText="例如：aes-128-gcm" />
+                <TextBlock x:Name="ProtocolSettingsTitle" Text="{local:Localize Key=SectionProtocol}" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                <PasswordBox x:Name="PasswordTextBox" Header="{local:Localize Key=LabelPassword}" />
+                <TextBox x:Name="EncryptionTextBox" Header="{local:Localize Key=LabelEncryption}" PlaceholderText="{local:Localize Key=PlaceholderEncryption}" />
                 <TextBox x:Name="UuidTextBox" Header="UUID" />
                 <NumberBox x:Name="AlterIdNumberBox" Header="AlterId" Minimum="0" Maximum="999" SpinButtonPlacementMode="Compact" />
-                <ComboBox x:Name="NetworkComboBox" Header="传输方式" SelectionChanged="NetworkComboBox_SelectionChanged">
+                <ComboBox x:Name="NetworkComboBox" Header="{local:Localize Key=LabelNetwork}" SelectionChanged="NetworkComboBox_SelectionChanged">
                     <x:String>tcp</x:String>
                     <x:String>ws</x:String>
                     <x:String>grpc</x:String>
@@ -45,15 +46,15 @@
                 <TextBox x:Name="PathTextBox" Header="Path / ServiceName" />
                 <TextBox x:Name="WsHostTextBox" Header="Host Header" />
 
-                <TextBlock x:Name="TransportSecurityTitle" Text="传输安全" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-                <ComboBox x:Name="SecurityComboBox" Header="类型" SelectionChanged="SecurityComboBox_SelectionChanged">
+                <TextBlock x:Name="TransportSecurityTitle" Text="{local:Localize Key=SectionTransport}" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                <ComboBox x:Name="SecurityComboBox" Header="{local:Localize Key=LabelType}" SelectionChanged="SecurityComboBox_SelectionChanged">
                     <ComboBoxItem x:Name="SecurityNoneItem" Content="none" Tag="none" />
                     <ComboBoxItem x:Name="SecurityTlsItem" Content="tls" Tag="tls" />
                     <ComboBoxItem x:Name="SecurityRealityItem" Content="reality" Tag="reality" />
                 </ComboBox>
                 <TextBox x:Name="SniTextBox" Header="SNI" />
                 <TextBox x:Name="FingerprintTextBox" Header="Fingerprint" PlaceholderText="chrome" />
-                <CheckBox x:Name="AllowInsecureCheckBox" Content="允许不安全证书" />
+                <CheckBox x:Name="AllowInsecureCheckBox" Content="{local:Localize Key=LabelAllowInsecure}" />
                 <TextBox x:Name="EchConfigListTextBox" Header="ECH ConfigList" />
                 <ComboBox x:Name="EchForceQueryComboBox" Header="ECH Force Query">
                     <ComboBoxItem Content="none" Tag="" />
@@ -66,14 +67,14 @@
                 <TextBox x:Name="FlowTextBox" Header="VLESS Flow" />
                 <TextBox x:Name="VlessEncryptionTextBox" Header="VLESS Encryption" />
 
-                <TextBlock Text="高级配置" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                <TextBlock Text="{local:Localize Key=SectionAdvanced}" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
                 <TextBox x:Name="FinalmaskTextBox" Header="FinalMask (JSON)" AcceptsReturn="True" TextWrapping="NoWrap" Height="104" />
             </StackPanel>
         </ScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,0,16,0">
-            <Button x:Name="SaveButton" Style="{StaticResource AccentButtonStyle}" Content="添加" MinWidth="96" Click="SaveButton_Click" />
-            <Button Content="取消" MinWidth="96" Click="CancelButton_Click" />
+            <Button x:Name="SaveButton" Style="{StaticResource AccentButtonStyle}" Content="{local:Localize Key=ButtonAdd}" MinWidth="96" Click="SaveButton_Click" />
+            <Button Content="{local:Localize Key=ButtonCancel}" MinWidth="96" Click="CancelButton_Click" />
         </StackPanel>
     </Grid>
 </Window>

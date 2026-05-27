@@ -8,17 +8,19 @@
 
 [English](README.md) | [简体中文](README.zh-Hans.md)
 
-Orayo is a modern Windows Xray client built with WinUI 3.
+Orayo 是一款使用 WinUI 3 构建的现代化 Windows Xray 客户端。
 
-## Features
+## 功能
 
-- Xray-core integration
-- Node list with import, add, edit, delete, and share
-- TUN mode and system proxy
-- Routing and DNS settings
-- Geo data file updates
+- Xray-core 集成
+- 节点列表：导入、添加、编辑、删除、分享
+- TUN 模式与系统代理
+- 路由与 DNS 设置
+- Geo 数据文件更新
+- 中文 / English 双语言支持
 
-## Screenshots
+## 截图
+
 <table>
   <tr>
 	<td><img src="docs/assets/screenshot-01.png" /></td>
@@ -30,7 +32,7 @@ Orayo is a modern Windows Xray client built with WinUI 3.
   </tr>
 </table>
 
-## Installation
+## 安装
 
 ### WinGet
 
@@ -38,25 +40,25 @@ Orayo is a modern Windows Xray client built with WinUI 3.
 winget install barkure.Orayo
 ```
 
-### Release
+### 发布页
 
-[Latest Release](https://github.com/barkure/Orayo/releases/latest): Setup (requires installation) and Portable (run directly, no installation needed).
+[最新版本](https://github.com/barkure/Orayo/releases/latest)：Setup（需安装）和 Portable（直接运行，无需安装）。
 
-## Build Instructions
+## 构建
 
-Requires .NET 8 SDK and Windows 10 1809 or later. Windows 10 2004 or later is recommended.
+需要 .NET 8 SDK 及 Windows 10 1809 或更高版本。推荐 Windows 10 2004 及以上。
 
 ```bash
 dotnet build -c Release
 ```
 
-## Open Source Projects Used
+## 使用的开源项目
 
 - [Xray-core](https://github.com/XTLS/Xray-core)
 - [Wintun](https://www.wintun.net/)
 - [Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat)
 - [Monaco Editor](https://github.com/microsoft/monaco-editor)
 
-## License
+## 许可证
 
 GPL-3.0

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using Orayo;
+
 namespace Orayo.Services;
 
 public static class RouteRulePresetService
@@ -75,13 +77,13 @@ public static class RouteRulePresetService
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new JsonException("routing JSON 不能为空。");
+            throw new JsonException(Strings.ErrRoutingJsonEmpty);
         }
 
         var node = JsonNode.Parse(json) as JsonObject
-                   ?? throw new JsonException("routing JSON 必须是一个对象。");
+                   ?? throw new JsonException(Strings.ErrRoutingJsonNotObject);
 
-        node["rules"] = ValidateRulesArray(node["rules"] as JsonArray ?? throw new JsonException("routing JSON 缺少 rules 数组。"));
+        node["rules"] = ValidateRulesArray(node["rules"] as JsonArray ?? throw new JsonException(Strings.ErrRoutingJsonMissingRules));
         node["domainStrategy"] = string.IsNullOrWhiteSpace(node["domainStrategy"]?.GetValue<string>())
             ? "IPIfNonMatch"
             : node["domainStrategy"]!.GetValue<string>();
@@ -93,7 +95,7 @@ public static class RouteRulePresetService
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new JsonException("routing JSON 不能为空。");
+            throw new JsonException(Strings.ErrRoutingJsonEmpty);
         }
 
         var wrapped = "{" + Environment.NewLine + json.Trim() + Environment.NewLine + "}";
@@ -125,18 +127,18 @@ public static class RouteRulePresetService
         {
             if (rules[i] is not JsonObject rule)
             {
-                throw new JsonException($"第 {i + 1} 条规则必须是对象。");
+                throw new JsonException(string.Format(Strings.ErrRoutingRuleNotObject, i + 1));
             }
 
             rule["type"] = string.IsNullOrWhiteSpace(rule["type"]?.GetValue<string>()) ? "field" : rule["type"]!.GetValue<string>();
             if (!string.Equals(rule["type"]?.GetValue<string>(), "field", StringComparison.OrdinalIgnoreCase))
             {
-                throw new JsonException($"第 {i + 1} 条规则的 type 目前只支持 field。");
+                throw new JsonException(string.Format(Strings.ErrRoutingRuleType, i + 1));
             }
 
             if (string.IsNullOrWhiteSpace(rule["outboundTag"]?.GetValue<string>()))
             {
-                throw new JsonException($"第 {i + 1} 条规则缺少 outboundTag。");
+                throw new JsonException(string.Format(Strings.ErrRoutingRuleMissingTag, i + 1));
             }
         }
 

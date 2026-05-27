@@ -4,44 +4,41 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:Orayo.Helpers"
     mc:Ignorable="d"
-    Title="更多">
+    Title="{local:Localize Key=TitleMore}">
 
     <Grid Padding="24,16,24,24" RowSpacing="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <Grid x:Name="TitleBarGrid" Margin="-24,-16,-24,0" Padding="24,12,24,12" Background="Transparent">
             <TextBlock x:Name="TitleBarTextBlock" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
         </Grid>
 
-        <StackPanel Grid.Row="1" Spacing="6">
-            <TextBlock Text="更多" FontSize="22" FontWeight="SemiBold" />
-            <TextBlock Text="Xray 内核、Geo 数据文件和软件信息" Opacity="0.68" />
-        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
+            <StackPanel Spacing="10">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{local:Localize Key=TitleMore}" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Text="{local:Localize Key=MoreDescription}" Opacity="0.68" />
+                </StackPanel>
 
-        <Border Grid.Row="2" Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Border Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="开机自启动" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TextBlock Text="{local:Localize Key=AutoStart}" FontWeight="SemiBold" VerticalAlignment="Center" />
 
                 <ToggleButton x:Name="AutoStartToggleButton" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Width="96" Click="AutoStartToggleButton_Click" />
             </Grid>
         </Border>
 
-        <Border Grid.Row="3" Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Border Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -51,7 +48,7 @@
                 <StackPanel Spacing="6">
                     <TextBlock Text="Xray-core" FontWeight="SemiBold" />
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock x:Name="VersionTextBlock" Text="读取中..." Opacity="0.72" VerticalAlignment="Center" />
+                        <TextBlock x:Name="VersionTextBlock" Text="{local:Localize Key=Loading}" Opacity="0.72" VerticalAlignment="Center" />
                         <HyperlinkButton x:Name="CommitLinkButton"
                                          Visibility="Collapsed"
                                          Padding="0"
@@ -60,11 +57,11 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Button x:Name="UpdateCoreButton" Grid.Column="1" Content="更新" MinWidth="96" Click="UpdateCoreButton_Click" />
+                <Button x:Name="UpdateCoreButton" Grid.Column="1" Content="{local:Localize Key=ButtonUpdate}" MinWidth="96" Click="UpdateCoreButton_Click" />
             </Grid>
         </Border>
 
-        <Border Grid.Row="4" Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Border Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -72,9 +69,9 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Geo 数据文件" FontWeight="SemiBold" />
+                    <TextBlock Text="{local:Localize Key=GeoFiles}" FontWeight="SemiBold" />
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="geoip.dat 和 geosite.dat 来自" Opacity="0.72" VerticalAlignment="Center" />
+                        <TextBlock Text="{local:Localize Key=GeoDescription}" Opacity="0.72" VerticalAlignment="Center" />
                         <HyperlinkButton Content="Loyalsoldier/v2ray-rules-dat"
                                          NavigateUri="https://github.com/Loyalsoldier/v2ray-rules-dat"
                                          Padding="0"
@@ -83,11 +80,11 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Button x:Name="UpdateGeofilesButton" Grid.Column="1" Content="更新" MinWidth="96" Click="UpdateGeofilesButton_Click" />
+                <Button x:Name="UpdateGeofilesButton" Grid.Column="1" Content="{local:Localize Key=ButtonUpdate}" MinWidth="96" Click="UpdateGeofilesButton_Click" />
             </Grid>
         </Border>
 
-        <Border Grid.Row="5" Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Border Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -95,15 +92,31 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Spacing="6">
-                    <TextBlock Text="网络回环管理器" FontWeight="SemiBold" />
-                    <TextBlock Text="用于处理 UWP / Microsoft Store 应用无法访问本机代理的问题" Opacity="0.72" TextWrapping="Wrap" />
+                    <TextBlock Text="{local:Localize Key=LoopbackManager}" FontWeight="SemiBold" />
+                    <TextBlock Text="{local:Localize Key=LoopbackDescription}" Opacity="0.72" TextWrapping="Wrap" />
                 </StackPanel>
 
-                <Button x:Name="OpenLoopbackUtilityButton" Grid.Column="1" Content="打开" MinWidth="96" Click="OpenLoopbackUtilityButton_Click" />
+                <Button x:Name="OpenLoopbackUtilityButton" Grid.Column="1" Content="{local:Localize Key=ButtonOpen}" MinWidth="96" Click="OpenLoopbackUtilityButton_Click" />
             </Grid>
         </Border>
 
-        <Border Grid.Row="6" Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Border Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{local:Localize Key=SettingsLanguage}" FontWeight="SemiBold" VerticalAlignment="Center" />
+
+                <ComboBox x:Name="LanguageComboBox" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Width="120" SelectionChanged="LanguageComboBox_SelectionChanged">
+                    <ComboBoxItem Content="中文" Tag="zh-Hans" />
+                    <ComboBoxItem Content="English" Tag="en" />
+                </ComboBox>
+            </Grid>
+        </Border>
+
+                <Border Padding="16" CornerRadius="5" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -111,9 +124,9 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Spacing="8">
-                    <TextBlock Text="关于 Orayo" FontWeight="SemiBold" />
-                    <TextBlock Text="一个适用于 Windows 的现代化 Xray 客户端" Opacity="0.72" TextWrapping="Wrap" />
-                    <TextBlock x:Name="AppVersionTextBlock" Text="当前版本：读取中..." Opacity="0.72" TextWrapping="Wrap" />
+                    <TextBlock Text="{local:Localize Key=AboutOrayo}" FontWeight="SemiBold" />
+                    <TextBlock Text="{local:Localize Key=AboutDescription}" Opacity="0.72" TextWrapping="Wrap" />
+                    <TextBlock x:Name="AppVersionTextBlock" Text="{local:Localize Key=AppVersionLoading}" Opacity="0.72" TextWrapping="Wrap" />
                     <HyperlinkButton Content="GitHub - barkure/Orayo"
                                      NavigateUri="https://github.com/barkure/Orayo"
                                      Padding="0"
@@ -121,10 +134,12 @@
                                      HorizontalAlignment="Left" />
                 </StackPanel>
 
-                <Button x:Name="CheckAppUpdateButton" Grid.Column="1" Content="检查更新" MinWidth="96" Click="CheckAppUpdateButton_Click" />
+                <Button x:Name="CheckAppUpdateButton" Grid.Column="1" Content="{local:Localize Key=ButtonCheckUpdate}" MinWidth="96" Click="CheckAppUpdateButton_Click" />
             </Grid>
         </Border>
 
-        <TextBlock Grid.Row="7" x:Name="StatusTextBlock" VerticalAlignment="Center" Opacity="0.72" TextWrapping="Wrap" />
+                <TextBlock x:Name="StatusTextBlock" VerticalAlignment="Center" Opacity="0.72" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Window>

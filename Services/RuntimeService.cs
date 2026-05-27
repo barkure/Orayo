@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Orayo;
 using Orayo.Models;
 
 namespace Orayo.Services;
@@ -64,17 +65,17 @@ public sealed class RuntimeService
                 var portConflict = await PortConflictService.EnsurePortsAvailableForCurrentXrayAsync(settings.LocalSocksPort, settings.LocalHttpPort);
                 if (!string.IsNullOrWhiteSpace(portConflict))
                 {
-                    return RuntimeConnectResult.Failed("连接失败", portConflict);
+                    return RuntimeConnectResult.Failed(Strings.ErrConnectionFailed, portConflict);
                 }
 
                 if (!_tunService.IsWintunAvailable())
                 {
-                    return RuntimeConnectResult.Failed("TUN 模式错误", $"找不到 wintun.dll\n路径：{_tunService.GetExpectedWintunPath()}");
+                    return RuntimeConnectResult.Failed(Strings.ErrTunModeError, string.Format(Strings.ErrWintunNotFound, _tunService.GetExpectedWintunPath()));
                 }
 
                 if (!await _tunBroker.EnsureBrokerAvailableAsync())
                 {
-                    return RuntimeConnectResult.Failed("TUN 模式错误", "无法启动 TUN 权限代理。");
+                    return RuntimeConnectResult.Failed(Strings.ErrTunModeError, Strings.ErrCannotStartTunBroker);
                 }
 
                 SystemProxyService.ClearProxy();
@@ -86,8 +87,8 @@ public sealed class RuntimeService
                     SystemProxyService.ClearProxy();
                     UpdateState(isRunning: false, activeServer: null, isTunSession: true);
                     return RuntimeConnectResult.Failed(
-                        response?.ErrorTitle ?? "连接失败",
-                        response?.ErrorMessage ?? "TUN 启动失败。");
+                        response?.ErrorTitle ?? Strings.ErrConnectionFailed,
+                        response?.ErrorMessage ?? Strings.ErrTunStartFailed);
                 }
 
                 SystemProxyService.ClearProxy();
@@ -101,7 +102,7 @@ public sealed class RuntimeService
             var localPortConflict = await PortConflictService.EnsurePortsAvailableForCurrentXrayAsync(settings.LocalSocksPort, settings.LocalHttpPort);
             if (!string.IsNullOrWhiteSpace(localPortConflict))
             {
-                return RuntimeConnectResult.Failed("连接失败", localPortConflict);
+                return RuntimeConnectResult.Failed(Strings.ErrConnectionFailed, localPortConflict);
             }
 
             var localConfig = XrayConfigBuilder.Build(server, settings);
@@ -111,8 +112,8 @@ public sealed class RuntimeService
                 SystemProxyService.ClearProxy();
                 UpdateState(isRunning: false, activeServer: null, isTunSession: false);
                 return RuntimeConnectResult.Failed(
-                    "连接失败",
-                    string.IsNullOrWhiteSpace(_localXray.LastError) ? "xray 启动失败。" : _localXray.LastError);
+                    Strings.ErrConnectionFailed,
+                    string.IsNullOrWhiteSpace(_localXray.LastError) ? Strings.ErrXrayStartFailed : _localXray.LastError);
             }
 
             runtimeState.LastSelectedServerId = server.Id;

@@ -1,10 +1,12 @@
 using Microsoft.UI.Xaml;
 using System;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Forms = System.Windows.Forms;
+using Orayo.Models;
 using Orayo.Services;
 using Velopack;
 
@@ -74,6 +76,19 @@ public partial class App : Application
         CoreUpdateService.TryApplyPendingXrayCoreUpdate();
         CoreUpdateService.CleanupVelopackPackages();
 
+        var store = new AppStore();
+        var settings = store.LoadSettingsAsync().GetAwaiter().GetResult();
+        if (!string.IsNullOrEmpty(settings.Language))
+        {
+            try
+            {
+                CultureInfo.CurrentUICulture = new CultureInfo(settings.Language);
+            }
+            catch
+            {
+            }
+        }
+
         var window = new MainWindow(_runtime);
 
         _window = window;
@@ -130,9 +145,9 @@ public partial class App : Application
         var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "icons", "AppIcon.ico");
         var icon = System.IO.File.Exists(iconPath) ? new Icon(iconPath) : SystemIcons.Application;
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("显示 Orayo", null, (_, _) => ShowMainWindow());
+        menu.Items.Add(Strings.TrayShowOrayo, null, (_, _) => ShowMainWindow());
         menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add("退出", null, async (_, _) => await RequestShutdownAsync());
+        menu.Items.Add(Strings.TrayExit, null, async (_, _) => await RequestShutdownAsync());
 
         _trayIcon = new Forms.NotifyIcon
         {
