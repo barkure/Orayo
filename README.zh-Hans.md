@@ -23,12 +23,12 @@ Orayo 是一款使用 WinUI 3 构建的现代化 Windows Xray 客户端。
 
 <table>
   <tr>
-	<td><img src="docs/assets/screenshot-01.png" /></td>
-	<td><img src="docs/assets/screenshot-02.png" /></td>
+	<td><img src="docs/assets/screenshot-zh-Hans-01.png" /></td>
+	<td><img src="docs/assets/screenshot-zh-Hans-02.png" /></td>
   </tr>
   <tr>
-	<td><img src="docs/assets/screenshot-03.png" /></td>
-	<td><img src="docs/assets/screenshot-04.png" /></td>
+	<td><img src="docs/assets/screenshot-zh-Hans-03.png" /></td>
+	<td><img src="docs/assets/screenshot-zh-Hans-04.png" /></td>
   </tr>
 </table>
 
