@@ -297,8 +297,7 @@ public static class XrayConfigBuilder
             ["security"] = "tls",
             ["tlsSettings"] = new JsonObject
             {
-                ["serverName"] = sni,
-                ["allowInsecure"] = server.AllowInsecure
+                ["serverName"] = sni
             },
             ["hysteriaSettings"] = new JsonObject
             {
@@ -360,8 +359,7 @@ public static class XrayConfigBuilder
             var tlsSettings = new JsonObject
             {
                 ["serverName"] = string.IsNullOrWhiteSpace(server.Sni) ? server.Host : server.Sni,
-                ["fingerprint"] = string.IsNullOrWhiteSpace(server.Fingerprint) ? "chrome" : server.Fingerprint,
-                ["allowInsecure"] = server.AllowInsecure
+                ["fingerprint"] = string.IsNullOrWhiteSpace(server.Fingerprint) ? "chrome" : server.Fingerprint
             };
 
             if (!string.IsNullOrWhiteSpace(server.EchConfigList))
@@ -437,7 +435,5 @@ public static class XrayConfigBuilder
         }
     }
 }
-
-
 
 

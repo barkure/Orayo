@@ -6,6 +6,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Orayo;
 
 namespace Orayo.Services;
@@ -240,12 +241,23 @@ public class XrayService
             AppendLog(string.Format(Strings.LogStart, ExePath));
             AppendLog(string.Format(Strings.LogConfig, ConfigPath));
 
-            await Task.Delay(800);
+            // Wait until the local inbound actually accepts connections (instead of a
+            // fixed delay), so startup returns as soon as the core is really ready.
+            var localPortReady = await WaitForLocalPortReadyAsync(configJson);
 
             if (_process.HasExited)
             {
                 var startupLog = StopStartupLogCaptureAndRead();
                 LastError = startupLog.Length > 0 ? startupLog : string.Format(Strings.ErrXrayExitImmediately, _process.ExitCode);
+                AppendLog(string.Format(Strings.LogStartFailed, LastError));
+                DisposeExitedProcess();
+                return false;
+            }
+
+            if (!localPortReady)
+            {
+                StopStartupLogCapture();
+                LastError = Strings.ErrXrayPortNotReady;
                 AppendLog(string.Format(Strings.LogStartFailed, LastError));
                 DisposeExitedProcess();
                 return false;
@@ -268,7 +280,6 @@ public class XrayService
     public async Task StopAsync()
     {
         await StopCoreAsync();
-        await FlushSystemDnsCacheAsync();
     }
 
     private async Task StopCoreAsync()
@@ -278,29 +289,41 @@ public class XrayService
             return;
         }
 
-        _process.Exited -= OnProcessExited;
+        var process = _process;
+        _process = null;
+        process.Exited -= OnProcessExited;
 
         try
         {
-            if (!_process.HasExited)
-            {
-                _process.Kill(entireProcessTree: true);
-            }
-
-            await _process.WaitForExitAsync();
+            KillProcess(process);
+            await process.WaitForExitAsync();
         }
         catch
         {
         }
         finally
         {
-            _process.Dispose();
-            _process = null;
+            process.Dispose();
             CloseJobObject();
         }
 
         AppendLog(Strings.LogStopped);
         RunningChanged?.Invoke(this, false);
+    }
+
+    /// <summary>Terminates the xray process tree, swallowing errors on already-exited processes.</summary>
+    private static void KillProcess(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+        }
     }
 
     private void TryAttachJobObject(Process process)
@@ -371,12 +394,8 @@ public class XrayService
 
         try
         {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-                process.WaitForExit(500);
-            }
-
+            KillProcess(process);
+            process.WaitForExit(500);
             process.Dispose();
         }
         catch
@@ -388,26 +407,73 @@ public class XrayService
         }
     }
 
-    private async Task FlushSystemDnsCacheAsync()
+    private async Task<bool> WaitForLocalPortReadyAsync(string configJson)
+    {
+        var port = TryGetLocalInboundPort(configJson);
+        if (port is null)
+        {
+            return true;
+        }
+
+        var deadline = Environment.TickCount64 + 5000;
+        while (Environment.TickCount64 < deadline)
+        {
+            if (_process is { HasExited: true })
+            {
+                return false;
+            }
+
+            if (await TryConnectLocalPortAsync(port.Value))
+            {
+                return true;
+            }
+
+            await Task.Delay(100);
+        }
+
+        return false;
+    }
+
+    private static int? TryGetLocalInboundPort(string configJson)
     {
         try
         {
-            using var p = Process.Start(new ProcessStartInfo
+            using var doc = JsonDocument.Parse(configJson);
+            if (!doc.RootElement.TryGetProperty("inbounds", out var inbounds)
+                || inbounds.ValueKind != JsonValueKind.Array)
             {
-                FileName = "ipconfig",
-                Arguments = "/flushdns",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            });
-            if (p is null) return;
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            try { await p.WaitForExitAsync(cts.Token); }
-            catch (OperationCanceledException) { try { p.Kill(); } catch { } }
+                return null;
+            }
+
+            foreach (var inbound in inbounds.EnumerateArray())
+            {
+                if (inbound.TryGetProperty("port", out var port)
+                    && port.ValueKind == JsonValueKind.Number
+                    && port.TryGetInt32(out var portNumber))
+                {
+                    return portNumber;
+                }
+            }
         }
         catch
         {
+        }
+
+        return null;
+    }
+
+    private static async Task<bool> TryConnectLocalPortAsync(int port)
+    {
+        try
+        {
+            using var client = new System.Net.Sockets.TcpClient();
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+            await client.ConnectAsync("127.0.0.1", port, cts.Token);
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -424,11 +490,8 @@ public class XrayService
 
         try
         {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-                process.WaitForExit(500);
-            }
+            KillProcess(process);
+            process.WaitForExit(500);
         }
         catch
         {
@@ -448,4 +511,3 @@ public class XrayService
         RunningChanged?.Invoke(this, false);
     }
 }
-

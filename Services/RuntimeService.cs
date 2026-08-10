@@ -194,7 +194,9 @@ public sealed class RuntimeService
             return;
         }
 
-        await EnsureTunBrokerStoppedAsync();
+        // Stop the core inside the broker but keep the broker process alive so the
+        // next TUN start does not pay UAC + cold-start again.
+        await _tunBroker.StopAsync();
     }
 
     private async Task<bool> IsBrokerRunningAsync()

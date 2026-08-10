@@ -25,7 +25,6 @@ public class ServerEntry : INotifyPropertyChanged
     private string _security = "none";
     private string _sni = string.Empty;
     private string _fingerprint = string.Empty;
-    private bool _allowInsecure;
     private string _echConfigList = string.Empty;
     private string _echForceQuery = string.Empty;
     private string _publicKey = string.Empty;
@@ -34,6 +33,7 @@ public class ServerEntry : INotifyPropertyChanged
     private string _flow = string.Empty;
     private string _vlessEncryption = string.Empty;
     private string _finalmask = string.Empty;
+    private string _subscriptionId = string.Empty;
     private bool _isActive;
     private string _latencyBadgeText = string.Empty;
     private Visibility _latencyBadgeVisibility = Visibility.Collapsed;
@@ -75,7 +75,6 @@ public class ServerEntry : INotifyPropertyChanged
     public string Security { get => _security; set => SetProperty(ref _security, value); }
     public string Sni { get => _sni; set => SetProperty(ref _sni, value); }
     public string Fingerprint { get => _fingerprint; set => SetProperty(ref _fingerprint, value); }
-    public bool AllowInsecure { get => _allowInsecure; set => SetProperty(ref _allowInsecure, value); }
     public string EchConfigList { get => _echConfigList; set => SetProperty(ref _echConfigList, value); }
     public string EchForceQuery { get => _echForceQuery; set => SetProperty(ref _echForceQuery, value); }
     public string PublicKey { get => _publicKey; set => SetProperty(ref _publicKey, value); }
@@ -84,6 +83,22 @@ public class ServerEntry : INotifyPropertyChanged
     public string Flow { get => _flow; set => SetProperty(ref _flow, value); }
     public string VlessEncryption { get => _vlessEncryption; set => SetProperty(ref _vlessEncryption, value); }
     public string Finalmask { get => _finalmask; set => SetProperty(ref _finalmask, value); }
+
+    /// <summary>Id of the subscription this node came from, or empty for manually added nodes.</summary>
+    public string SubscriptionId
+    {
+        get => _subscriptionId;
+        set
+        {
+            if (SetProperty(ref _subscriptionId, value))
+            {
+                OnPropertyChanged(nameof(SubscriptionVisibility));
+            }
+        }
+    }
+
+    [JsonIgnore]
+    public Visibility SubscriptionVisibility => string.IsNullOrEmpty(SubscriptionId) ? Visibility.Collapsed : Visibility.Visible;
 
     public bool IsActive
     {
@@ -156,7 +171,6 @@ public class ServerEntry : INotifyPropertyChanged
         Security = Security,
         Sni = Sni,
         Fingerprint = Fingerprint,
-        AllowInsecure = AllowInsecure,
         EchConfigList = EchConfigList,
         EchForceQuery = EchForceQuery,
         PublicKey = PublicKey,
@@ -165,6 +179,7 @@ public class ServerEntry : INotifyPropertyChanged
         Flow = Flow,
         VlessEncryption = VlessEncryption,
         Finalmask = Finalmask,
+        SubscriptionId = SubscriptionId,
         IsActive = IsActive,
     };
 
@@ -185,4 +200,3 @@ public class ServerEntry : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
-

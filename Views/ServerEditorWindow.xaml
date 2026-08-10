@@ -54,7 +54,6 @@
                 </ComboBox>
                 <TextBox x:Name="SniTextBox" Header="SNI" />
                 <TextBox x:Name="FingerprintTextBox" Header="Fingerprint" PlaceholderText="chrome" />
-                <CheckBox x:Name="AllowInsecureCheckBox" Content="{local:Localize Key=LabelAllowInsecure}" />
                 <TextBox x:Name="EchConfigListTextBox" Header="ECH ConfigList" />
                 <ComboBox x:Name="EchForceQueryComboBox" Header="ECH Force Query">
                     <ComboBoxItem Content="none" Tag="" />
@@ -78,8 +77,6 @@
         </StackPanel>
     </Grid>
 </Window>
-
-
 
 
 

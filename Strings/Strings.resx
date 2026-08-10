@@ -396,9 +396,6 @@
   <data name="LabelType" xml:space="preserve">
     <value>类型</value>
   </data>
-  <data name="LabelAllowInsecure" xml:space="preserve">
-    <value>允许不安全证书</value>
-  </data>
   <data name="SectionAdvanced" xml:space="preserve">
     <value>高级配置</value>
   </data>
@@ -468,6 +465,9 @@
   </data>
   <data name="ErrXrayExitImmediately" xml:space="preserve">
     <value>xray 立即退出（退出码 {0}）</value>
+  </data>
+  <data name="ErrXrayPortNotReady" xml:space="preserve">
+    <value>xray 在 5 秒内未能监听本地代理端口。</value>
   </data>
   <data name="LogStartFailed" xml:space="preserve">
     <value>[错误] 启动失败：{0}</value>
@@ -598,5 +598,57 @@
   </data>
   <data name="TrayExit" xml:space="preserve">
     <value>退出</value>
+  </data>
+  <!-- Subscription -->
+  <data name="TipSubscribe" xml:space="preserve">
+    <value>添加订阅</value>
+  </data>
+  <data name="TipRefreshSubscriptions" xml:space="preserve">
+    <value>刷新订阅</value>
+  </data>
+  <data name="TitleSubscribe" xml:space="preserve">
+    <value>添加订阅</value>
+  </data>
+  <data name="LabelSubUrl" xml:space="preserve">
+    <value>订阅地址</value>
+  </data>
+  <data name="LabelSubRemarks" xml:space="preserve">
+    <value>备注（可选）</value>
+  </data>
+  <data name="ButtonSubscribe" xml:space="preserve">
+    <value>订阅</value>
+  </data>
+  <data name="MsgSubFetchFailed" xml:space="preserve">
+    <value>订阅获取失败：{0}</value>
+  </data>
+  <data name="MsgSubNoNodes" xml:space="preserve">
+    <value>订阅中没有解析到节点</value>
+  </data>
+  <data name="MsgSubImportDone" xml:space="preserve">
+    <value>订阅导入完成</value>
+  </data>
+  <data name="MsgSubImported" xml:space="preserve">
+    <value>已从订阅导入 {0} 个节点</value>
+  </data>
+  <data name="MsgSubNone" xml:space="preserve">
+    <value>没有可用的订阅，请先添加订阅</value>
+  </data>
+  <data name="MsgSubRefreshDone" xml:space="preserve">
+    <value>订阅刷新完成：成功 {0} 个，失败 {1} 个</value>
+  </data>
+  <data name="MsgSubRefreshFailed" xml:space="preserve">
+    <value>订阅刷新失败：{0}</value>
+  </data>
+  <data name="MsgSubSaveFailed" xml:space="preserve">
+    <value>保存订阅数据失败：{0}</value>
+  </data>
+  <data name="MenuDeleteSubscription" xml:space="preserve">
+    <value>删除该订阅</value>
+  </data>
+  <data name="TitleDeleteSubscription" xml:space="preserve">
+    <value>删除订阅</value>
+  </data>
+  <data name="MsgConfirmDeleteSubscription" xml:space="preserve">
+    <value>确定删除订阅“{0}”及其全部节点？</value>
   </data>
 </root>

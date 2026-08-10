@@ -17,7 +17,6 @@
     <EnableMsixTooling>false</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
     <Nullable>enable</Nullable>
-    <DefaultItemExcludes>$(DefaultItemExcludes);_old_layout\**;_old_layout/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

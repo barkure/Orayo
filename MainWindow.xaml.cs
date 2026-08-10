@@ -8,6 +8,7 @@ using Orayo.Models;
 using Orayo.Services;
 using Orayo.Views;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -42,6 +43,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private bool _isLatencyRefreshing;
     private string _routingModeText = Strings.RoutingRuleMode;
     private CancellationTokenSource? _latencyRefreshCts;
+    private readonly List<Subscription> _subscriptions = new();
+    private bool _isSubscriptionRefreshing;
+    private bool _isSubscriptionAdding;
+    private bool _isSubscriptionDeleting;
 
     private static readonly Brush LatencyDeepGreenBrush = CreateBrush(0x00, 0x82, 0x35);
     private static readonly Brush LatencyLightGreenBrush = CreateBrush(0x7c, 0xcf, 0x00);
@@ -64,7 +69,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(SelectedSummary));
                 PersistSelectedServer();
-                if (!_isInitializing)
+                if (!_isInitializing && !_isSubscriptionRefreshing)
                 {
                     _ = EnsureSelectedServerAppliedAsync(forceRestart: false);
                 }
@@ -121,6 +126,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public string SelectedSummary => SelectedServer is null ? Strings.StatusNotSelected : string.Format(Strings.StatusCurrentSelected, SelectedServer.Name);
     public Visibility IsEmptyHintVisible => Servers.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     public bool IsLatencyRefreshEnabled => !_isLatencyRefreshing && Servers.Count > 0;
+    public bool IsSubscriptionRefreshEnabled =>
+        !_isSubscriptionRefreshing && !_isSubscriptionAdding && !_isSubscriptionDeleting && _subscriptions.Count > 0;
+    public bool IsSubscriptionMutationEnabled =>
+        !_isSubscriptionRefreshing && !_isSubscriptionAdding && !_isSubscriptionDeleting;
     public bool IsTunToggleEnabled => !_isApplyingSelection;
     public bool IsRouteSettingsEnabled => !_isApplyingSelection;
     public bool IsSystemProxyToggleEnabled => !IsTunMode && !_isApplyingSelection;
@@ -221,6 +230,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             Servers.Add(server);
         }
 
+        _subscriptions.AddRange(await _store.LoadSubscriptionsAsync());
+
         _isTunInternalUpdate = true;
         IsTunMode = _settings.IsTunMode;
         _isTunInternalUpdate = false;
@@ -237,6 +248,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         OnPropertyChanged(nameof(IsEmptyHintVisible));
         OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+        OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
         OnPropertyChanged(nameof(RouteSettingsSummary));
         OnPropertyChanged(nameof(TunHintText));
 
@@ -320,10 +332,26 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             await Task.Delay(250, cancellationToken);
-            foreach (var server in Servers)
+
+            // Probe nodes with bounded concurrency instead of one-by-one.
+            using var gate = new SemaphoreSlim(8);
+            var probes = Servers.Select(async server =>
+            {
+                await gate.WaitAsync(cancellationToken);
+                try
+                {
+                    return (server, await _serverLatencyService.ProbeAsync(server, cancellationToken));
+                }
+                finally
+                {
+                    gate.Release();
+                }
+            }).ToList();
+
+            var results = await Task.WhenAll(probes);
+            foreach (var (server, result) in results)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var result = await _serverLatencyService.ProbeAsync(server, cancellationToken);
                 ApplyLatencyResult(server, result);
             }
         }
@@ -1079,6 +1107,422 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
+    // ── Subscription ────────────────────────────────────────────────────────
+
+    private async void SubscribeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isSubscriptionRefreshing || _isSubscriptionAdding || _isSubscriptionDeleting)
+        {
+            return;
+        }
+
+        var input = await ShowSubscribeDialogAsync();
+        if (input is null || _isSubscriptionRefreshing || _isSubscriptionAdding || _isSubscriptionDeleting)
+        {
+            return;
+        }
+
+        _isSubscriptionAdding = true;
+        OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
+        OnPropertyChanged(nameof(IsSubscriptionMutationEnabled));
+        try
+        {
+            await SubscribeAsync(input.Value.Url, input.Value.Remarks);
+        }
+        finally
+        {
+            _isSubscriptionAdding = false;
+            OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
+            OnPropertyChanged(nameof(IsSubscriptionMutationEnabled));
+        }
+    }
+
+    private async void RefreshSubscriptionsButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isSubscriptionRefreshing || _isSubscriptionAdding || _isSubscriptionDeleting)
+        {
+            return;
+        }
+
+        var enabled = _subscriptions.Where(s => s.Enabled && !string.IsNullOrWhiteSpace(s.Url)).ToList();
+        if (enabled.Count == 0)
+        {
+            await ShowMessageAsync(Strings.TipRefreshSubscriptions, Strings.MsgSubNone);
+            return;
+        }
+
+        var failed = 0;
+        string? lastError = null;
+        string? saveError = null;
+        var updates = new List<(Subscription Subscription, List<ServerEntry> Nodes, string Payload, DateTime UpdatedAt)>();
+        _isSubscriptionRefreshing = true;
+        OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
+        OnPropertyChanged(nameof(IsSubscriptionMutationEnabled));
+        try
+        {
+            foreach (var sub in enabled)
+            {
+                var (content, error) = await SubscriptionService.FetchAsync(sub.Url, sub.UserAgent, GetSubscriptionProxyPort());
+                if (content is null)
+                {
+                    failed++;
+                    lastError = error;
+                    continue;
+                }
+
+                var nodes = SubscriptionService.ParseContent(content);
+                if (nodes.Count == 0)
+                {
+                    failed++;
+                    lastError = Strings.MsgSubNoNodes;
+                    continue;
+                }
+
+                if (_subscriptions.Contains(sub))
+                {
+                    updates.Add((sub, nodes, content, DateTime.UtcNow));
+                }
+            }
+
+            if (updates.Count > 0)
+            {
+                var updatedServers = Servers.ToList();
+                var updatedSubscriptions = _subscriptions.Select(CloneSubscription).ToList();
+                foreach (var update in updates)
+                {
+                    updatedServers.RemoveAll(s => s.SubscriptionId == update.Subscription.Id);
+                    foreach (var node in update.Nodes)
+                    {
+                        node.SubscriptionId = update.Subscription.Id;
+                    }
+                    updatedServers.AddRange(update.Nodes);
+
+                    var savedSubscription = updatedSubscriptions.First(s => s.Id == update.Subscription.Id);
+                    savedSubscription.RawPayload = update.Payload;
+                    savedSubscription.LastUpdated = update.UpdatedAt;
+                }
+
+                try
+                {
+                    await _store.SaveServersAndSubscriptionsAsync(updatedServers, updatedSubscriptions);
+                }
+                catch (Exception ex)
+                {
+                    saveError = ex.Message;
+                }
+
+                if (saveError is null)
+                {
+                    var reconnectSelected = false;
+                    foreach (var update in updates)
+                    {
+                        reconnectSelected |= ReplaceSubscriptionNodes(
+                            update.Subscription,
+                            update.Nodes,
+                            update.Payload,
+                            update.UpdatedAt);
+                    }
+
+                    if (reconnectSelected && SelectedServer is not null)
+                    {
+                        await EnsureSelectedServerAppliedAsync(forceRestart: true);
+                    }
+
+                    OnPropertyChanged(nameof(IsEmptyHintVisible));
+                    OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+                    ScheduleLatencyRefresh();
+                }
+            }
+        }
+        finally
+        {
+            _isSubscriptionRefreshing = false;
+            OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
+            OnPropertyChanged(nameof(IsSubscriptionMutationEnabled));
+        }
+
+        if (saveError is not null)
+        {
+            await ShowMessageAsync(Strings.TipRefreshSubscriptions, string.Format(Strings.MsgSubSaveFailed, saveError));
+            return;
+        }
+
+        var succeeded = updates.Count;
+        var summary = succeeded > 0
+            ? string.Format(Strings.MsgSubRefreshDone, succeeded, failed)
+            : string.Format(Strings.MsgSubRefreshFailed, lastError ?? Strings.MsgSubNoNodes);
+        await ShowMessageAsync(Strings.TipRefreshSubscriptions, summary);
+    }
+
+    private async void DeleteSubscriptionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isSubscriptionRefreshing || _isSubscriptionAdding || _isSubscriptionDeleting)
+        {
+            return;
+        }
+
+        if (sender is not FrameworkElement element || element.DataContext is not ServerEntry server)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(server.SubscriptionId))
+        {
+            return;
+        }
+
+        var sub = _subscriptions.FirstOrDefault(s => s.Id == server.SubscriptionId);
+        var subName = sub?.Remarks ?? server.SubscriptionId;
+        if (!await ConfirmAsync(Strings.TitleDeleteSubscription, string.Format(Strings.MsgConfirmDeleteSubscription, subName))
+            || _isSubscriptionRefreshing
+            || _isSubscriptionAdding
+            || _isSubscriptionDeleting)
+        {
+            return;
+        }
+
+        if (string.Equals(_activeServer?.SubscriptionId, server.SubscriptionId, StringComparison.Ordinal))
+        {
+            await ShowMessageAsync(Strings.ErrCannotDelete, Strings.ErrCannotDeleteActive);
+            return;
+        }
+
+        _isSubscriptionDeleting = true;
+        OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
+        OnPropertyChanged(nameof(IsSubscriptionMutationEnabled));
+        try
+        {
+            var selectedBelongsToSubscription = string.Equals(
+                SelectedServer?.SubscriptionId,
+                server.SubscriptionId,
+                StringComparison.Ordinal);
+            var remainingServers = Servers.Where(s => s.SubscriptionId != server.SubscriptionId).ToList();
+            var remainingSubscriptions = _subscriptions.Where(s => s.Id != server.SubscriptionId).ToList();
+            await _store.SaveServersAndSubscriptionsAsync(remainingServers, remainingSubscriptions);
+
+            foreach (var item in Servers.Where(s => s.SubscriptionId == server.SubscriptionId).ToList())
+            {
+                Servers.Remove(item);
+            }
+
+            if (selectedBelongsToSubscription)
+            {
+                _isApplyingSelection = true;
+                SelectedServer = Servers.FirstOrDefault();
+                _isApplyingSelection = false;
+            }
+
+            if (sub is not null)
+            {
+                _subscriptions.Remove(sub);
+            }
+
+            OnPropertyChanged(nameof(IsEmptyHintVisible));
+            OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+            ScheduleLatencyRefresh();
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync(Strings.TitleDeleteSubscription, string.Format(Strings.MsgSubSaveFailed, ex.Message));
+            return;
+        }
+        finally
+        {
+            _isSubscriptionDeleting = false;
+            OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
+            OnPropertyChanged(nameof(IsSubscriptionMutationEnabled));
+        }
+    }
+
+    private async Task<(string Url, string Remarks)?> ShowSubscribeDialogAsync()
+    {
+        var urlBox = new TextBox { PlaceholderText = Strings.LabelSubUrl, MinWidth = 420 };
+        var remarksBox = new TextBox { PlaceholderText = Strings.LabelSubRemarks, MinWidth = 420 };
+        var dialog = new ContentDialog
+        {
+            Title = Strings.TitleSubscribe,
+            PrimaryButtonText = Strings.ButtonSubscribe,
+            CloseButtonText = Strings.ButtonCancel,
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = ((FrameworkElement)Content).XamlRoot,
+            Content = new StackPanel
+            {
+                Spacing = 12,
+                Children = { urlBox, remarksBox }
+            }
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return null;
+        }
+
+        var url = urlBox.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        return (url, remarksBox.Text?.Trim() ?? string.Empty);
+    }
+
+    private async Task SubscribeAsync(string url, string remarks)
+    {
+        if (_isSubscriptionRefreshing)
+        {
+            return;
+        }
+
+        var (content, error) = await SubscriptionService.FetchAsync(url, null, GetSubscriptionProxyPort());
+        if (content is null)
+        {
+            await ShowMessageAsync(Strings.TitleSubscribe, string.Format(Strings.MsgSubFetchFailed, error));
+            return;
+        }
+
+        var nodes = SubscriptionService.ParseContent(content);
+        if (nodes.Count == 0)
+        {
+            await ShowMessageAsync(Strings.TitleSubscribe, Strings.MsgSubNoNodes);
+            return;
+        }
+
+        var name = string.IsNullOrWhiteSpace(remarks) ? DeriveSubscriptionName(url) : remarks;
+        var sub = new Subscription
+        {
+            Url = url,
+            Remarks = name,
+            RawPayload = content,
+            LastUpdated = DateTime.UtcNow
+        };
+
+        foreach (var node in nodes)
+        {
+            node.SubscriptionId = sub.Id;
+        }
+
+        var updatedServers = Servers.Concat(nodes).ToList();
+        var updatedSubscriptions = _subscriptions.Append(sub).ToList();
+        try
+        {
+            await _store.SaveServersAndSubscriptionsAsync(updatedServers, updatedSubscriptions);
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync(Strings.TitleSubscribe, string.Format(Strings.MsgSubSaveFailed, ex.Message));
+            return;
+        }
+
+        foreach (var node in nodes)
+        {
+            Servers.Add(node);
+        }
+        _subscriptions.Add(sub);
+        if (SelectedServer is null)
+        {
+            SelectedServer = nodes[0];
+        }
+
+        OnPropertyChanged(nameof(IsEmptyHintVisible));
+        OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
+        OnPropertyChanged(nameof(IsSubscriptionRefreshEnabled));
+        ScheduleLatencyRefresh();
+
+        await ShowMessageAsync(Strings.MsgSubImportDone, string.Format(Strings.MsgSubImported, nodes.Count));
+    }
+
+    /// <summary>
+    /// Whole-group replace (V2rayN semantics): drop every node of this subscription,
+    /// re-insert the freshly parsed list, and keep the selection when the previously
+    /// selected node still exists in the new list.
+    /// </summary>
+    private bool ReplaceSubscriptionNodes(
+        Subscription sub,
+        List<ServerEntry> nodes,
+        string payload,
+        DateTime updatedAt)
+    {
+        var selected = SelectedServer;
+        var active = _activeServer;
+        var selectedBelongsToSubscription = selected?.SubscriptionId == sub.Id;
+        var activeBelongsToSubscription = active?.SubscriptionId == sub.Id;
+
+        foreach (var server in Servers.Where(s => s.SubscriptionId == sub.Id).ToList())
+        {
+            Servers.Remove(server);
+        }
+
+        foreach (var node in nodes)
+        {
+            node.SubscriptionId = sub.Id;
+            Servers.Add(node);
+        }
+
+        if (selectedBelongsToSubscription || activeBelongsToSubscription)
+        {
+            var previous = activeBelongsToSubscription ? active : selected;
+            SelectedServer = previous is null
+                ? nodes[0]
+                : FindReplacementNode(nodes, previous) ?? nodes[0];
+        }
+
+        sub.RawPayload = payload;
+        sub.LastUpdated = updatedAt;
+        return selectedBelongsToSubscription || activeBelongsToSubscription;
+    }
+
+    private static ServerEntry? FindReplacementNode(IEnumerable<ServerEntry> nodes, ServerEntry previous)
+    {
+        return nodes.FirstOrDefault(node =>
+            string.Equals(node.Protocol, previous.Protocol, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(node.Host, previous.Host, StringComparison.OrdinalIgnoreCase)
+            && node.Port == previous.Port
+            && string.Equals(node.Uuid, previous.Uuid, StringComparison.Ordinal)
+            && string.Equals(node.Username, previous.Username, StringComparison.Ordinal)
+            && string.Equals(node.Password, previous.Password, StringComparison.Ordinal));
+    }
+
+    private static Subscription CloneSubscription(Subscription subscription)
+    {
+        return new Subscription
+        {
+            Id = subscription.Id,
+            Url = subscription.Url,
+            Remarks = subscription.Remarks,
+            Enabled = subscription.Enabled,
+            UserAgent = subscription.UserAgent,
+            LastUpdated = subscription.LastUpdated,
+            RawPayload = subscription.RawPayload
+        };
+    }
+
+    private int? GetSubscriptionProxyPort()
+    {
+        if (IsTunMode || !_runtime.IsRunning || !_settings.IsSystemProxyEnabled)
+        {
+            return null;
+        }
+
+        return _settings.LocalHttpPort;
+    }
+
+    private static string DeriveSubscriptionName(string url)
+    {
+        try
+        {
+            var uri = new Uri(url);
+            if (!string.IsNullOrWhiteSpace(uri.Host))
+            {
+                return uri.Host;
+            }
+        }
+        catch
+        {
+        }
+
+        return Strings.Unknown;
+    }
+
     private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
         args.Cancel = true;
@@ -1102,10 +1546,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
-
-
-
-
 
 
 

@@ -71,8 +71,7 @@ namespace Orayo.Services
                 ["tls"] = tls,
                 ["sni"] = s.Sni ?? string.Empty,
                 ["fp"] = s.Fingerprint ?? string.Empty,
-                ["fm"] = FinalmaskJson.NormalizeForShare(s.Finalmask),
-                ["allowInsecure"] = s.AllowInsecure ? "1" : ""
+                ["fm"] = FinalmaskJson.NormalizeForShare(s.Finalmask)
             };
 
             var json = payload.ToJsonString(JsonOptions);
@@ -104,8 +103,6 @@ namespace Orayo.Services
             {
                 AppendIfNotEmpty(sb, "sni", s.Sni);
                 AppendIfNotEmpty(sb, "fp", s.Fingerprint);
-                if (s.AllowInsecure)
-                    AppendParam(sb, "allowInsecure", "1", first: false);
             }
 
             if (security == "tls" && !string.IsNullOrWhiteSpace(s.EchConfigList))
@@ -157,7 +154,7 @@ namespace Orayo.Services
             sb.Append(s.Port);
 
             var finalmask = FinalmaskJson.NormalizeForShare(s.Finalmask);
-            bool hasQuery = !string.IsNullOrEmpty(s.Sni) || s.AllowInsecure || !string.IsNullOrEmpty(finalmask);
+            bool hasQuery = !string.IsNullOrEmpty(s.Sni) || !string.IsNullOrEmpty(finalmask);
             if (hasQuery)
             {
                 sb.Append('?');
@@ -165,11 +162,6 @@ namespace Orayo.Services
                 if (!string.IsNullOrEmpty(s.Sni))
                 {
                     AppendParam(sb, "sni", s.Sni, first: true);
-                    first = false;
-                }
-                if (s.AllowInsecure)
-                {
-                    AppendParam(sb, "insecure", "1", first: first);
                     first = false;
                 }
                 if (!string.IsNullOrEmpty(finalmask))
@@ -209,7 +201,6 @@ namespace Orayo.Services
                             || security != "tls"
                             || !string.IsNullOrEmpty(s.Sni)
                             || !string.IsNullOrEmpty(s.Fingerprint)
-                            || s.AllowInsecure
                             || !string.IsNullOrEmpty(s.Path)
                             || !string.IsNullOrEmpty(s.WsHost)
                             || !string.IsNullOrEmpty(finalmask);
@@ -236,8 +227,6 @@ namespace Orayo.Services
                     AddParam("security", security);
                 AddIfNotEmpty("sni", s.Sni);
                 AddIfNotEmpty("fp", s.Fingerprint);
-                if (s.AllowInsecure)
-                    AddParam("allowInsecure", "1");
 
                 if (network == "grpc")
                     AddIfNotEmpty("serviceName", s.Path);
@@ -284,4 +273,3 @@ namespace Orayo.Services
         }
     }
 }
-

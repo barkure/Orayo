@@ -81,7 +81,6 @@ public sealed partial class ServerEditorWindow : Window
         SelectSecurity(server.Security);
         SniTextBox.Text = server.Sni;
         FingerprintTextBox.Text = server.Fingerprint;
-        AllowInsecureCheckBox.IsChecked = server.AllowInsecure;
         EchConfigListTextBox.Text = server.EchConfigList;
         SelectEchForceQuery(server.EchForceQuery);
         PublicKeyTextBox.Text = server.PublicKey;
@@ -150,7 +149,6 @@ public sealed partial class ServerEditorWindow : Window
         WsHostTextBox.Visibility = hasWs || hasXhttp ? Visibility.Visible : Visibility.Collapsed;
         SniTextBox.Visibility = hasTls || hasReality ? Visibility.Visible : Visibility.Collapsed;
         FingerprintTextBox.Visibility = (hasTls && !isHysteria2) || hasReality ? Visibility.Visible : Visibility.Collapsed;
-        AllowInsecureCheckBox.Visibility = hasTls || hasReality ? Visibility.Visible : Visibility.Collapsed;
         EchConfigListTextBox.Visibility = hasEch ? Visibility.Visible : Visibility.Collapsed;
         EchForceQueryComboBox.Visibility = hasEch ? Visibility.Visible : Visibility.Collapsed;
         PublicKeyTextBox.Visibility = hasReality ? Visibility.Visible : Visibility.Collapsed;
@@ -181,7 +179,6 @@ public sealed partial class ServerEditorWindow : Window
         Server.Security = NormalizeSecurityForProtocol(Server.Protocol, GetSelectedSecurity());
         Server.Sni = SniTextBox.Text.Trim();
         Server.Fingerprint = FingerprintTextBox.Text.Trim();
-        Server.AllowInsecure = AllowInsecureCheckBox.IsChecked == true;
         Server.EchConfigList = EchConfigListTextBox.Text.Trim();
         Server.EchForceQuery = GetSelectedEchForceQuery();
         Server.PublicKey = PublicKeyTextBox.Text.Trim();

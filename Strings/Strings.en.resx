@@ -396,9 +396,6 @@
   <data name="LabelType" xml:space="preserve">
     <value>Type</value>
   </data>
-  <data name="LabelAllowInsecure" xml:space="preserve">
-    <value>Allow Insecure Certificate</value>
-  </data>
   <data name="SectionAdvanced" xml:space="preserve">
     <value>Advanced Config</value>
   </data>
@@ -468,6 +465,9 @@ Path: {0}</value>
   </data>
   <data name="ErrXrayExitImmediately" xml:space="preserve">
     <value>xray exited immediately (exit code {0})</value>
+  </data>
+  <data name="ErrXrayPortNotReady" xml:space="preserve">
+    <value>xray did not listen on the local proxy port within 5 seconds.</value>
   </data>
   <data name="LogStartFailed" xml:space="preserve">
     <value>[Error] Start failed: {0}</value>
@@ -598,5 +598,57 @@ Path: {3}</value>
   </data>
   <data name="TrayExit" xml:space="preserve">
     <value>Exit</value>
+  </data>
+  <!-- Subscription -->
+  <data name="TipSubscribe" xml:space="preserve">
+    <value>Add subscription</value>
+  </data>
+  <data name="TipRefreshSubscriptions" xml:space="preserve">
+    <value>Refresh subscriptions</value>
+  </data>
+  <data name="TitleSubscribe" xml:space="preserve">
+    <value>Add Subscription</value>
+  </data>
+  <data name="LabelSubUrl" xml:space="preserve">
+    <value>Subscription URL</value>
+  </data>
+  <data name="LabelSubRemarks" xml:space="preserve">
+    <value>Remark (optional)</value>
+  </data>
+  <data name="ButtonSubscribe" xml:space="preserve">
+    <value>Subscribe</value>
+  </data>
+  <data name="MsgSubFetchFailed" xml:space="preserve">
+    <value>Failed to fetch subscription: {0}</value>
+  </data>
+  <data name="MsgSubNoNodes" xml:space="preserve">
+    <value>No nodes parsed from the subscription</value>
+  </data>
+  <data name="MsgSubImportDone" xml:space="preserve">
+    <value>Subscription imported</value>
+  </data>
+  <data name="MsgSubImported" xml:space="preserve">
+    <value>Imported {0} nodes from the subscription</value>
+  </data>
+  <data name="MsgSubNone" xml:space="preserve">
+    <value>No subscriptions available. Add one first.</value>
+  </data>
+  <data name="MsgSubRefreshDone" xml:space="preserve">
+    <value>Subscription refresh done: {0} succeeded, {1} failed</value>
+  </data>
+  <data name="MsgSubRefreshFailed" xml:space="preserve">
+    <value>Subscription refresh failed: {0}</value>
+  </data>
+  <data name="MsgSubSaveFailed" xml:space="preserve">
+    <value>Failed to save subscription data: {0}</value>
+  </data>
+  <data name="MenuDeleteSubscription" xml:space="preserve">
+    <value>Delete subscription</value>
+  </data>
+  <data name="TitleDeleteSubscription" xml:space="preserve">
+    <value>Delete Subscription</value>
+  </data>
+  <data name="MsgConfirmDeleteSubscription" xml:space="preserve">
+    <value>Delete subscription "{0}" and all of its nodes?</value>
   </data>
 </root>

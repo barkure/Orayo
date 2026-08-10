@@ -176,7 +176,6 @@ namespace Orayo.Services
                 var net      = GetStr("net", "tcp");
                 var tls      = GetStr("tls", "");
                 var security = tls == "tls" ? "tls" : "none";
-                var allowInsecure = IsTruthy(GetStr("allowInsecure")) || IsTruthy(GetStr("insecure"));
                 var finalmask = FinalmaskJson.NormalizeForStorage(GetStr("fm", GetStr("finalmask")));
 
                 return new ServerEntry
@@ -193,7 +192,6 @@ namespace Orayo.Services
                     Security    = security,
                     Sni         = GetStr("sni"),
                     Fingerprint = GetStr("fp"),
-                    AllowInsecure = allowInsecure,
                     Finalmask   = finalmask,
                     Encryption  = security == "tls" ? "TLS" : "None"
                 };
@@ -236,8 +234,6 @@ namespace Orayo.Services
                 var echForceQuery = EchSettings.NormalizeForceQuery(
                     Q(query, "echForceQuery") ?? Q(query, "echfq"));
                 var finalmask = FinalmaskJson.NormalizeForStorage(Q(query, "fm"));
-                var allowInsecure = IsTruthy(Q(query, "allowInsecure")) || IsTruthy(Q(query, "insecure"));
-
                 return new ServerEntry
                 {
                     Name        = name,
@@ -249,7 +245,6 @@ namespace Orayo.Services
                     Security    = security,
                     Sni         = sni,
                     Fingerprint = fp,
-                    AllowInsecure = allowInsecure,
                     EchConfigList = echConfigList,
                     EchForceQuery = echForceQuery,
                     PublicKey   = pk,
@@ -288,8 +283,6 @@ namespace Orayo.Services
                 var query = ParseQuery(uri.Query);
                 var sni   = Q(query, "sni", string.Empty) ?? string.Empty;
                 var finalmask = FinalmaskJson.NormalizeForStorage(Q(query, "fm"));
-                var allowInsecure = IsTruthy(Q(query, "allowInsecure")) || IsTruthy(Q(query, "insecure"));
-
                 return new ServerEntry
                 {
                     Name       = name,
@@ -300,7 +293,6 @@ namespace Orayo.Services
                     Network    = "udp",
                     Security   = "tls",
                     Sni        = sni,
-                    AllowInsecure = allowInsecure,
                     Finalmask  = finalmask,
                     Encryption = "TLS"
                 };
@@ -311,7 +303,7 @@ namespace Orayo.Services
             }
         }
 
-        // 鈹€鈹€ Trojan 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ── Trojan ─────────────────────────────────────────────
 
         private static ServerEntry? ParseTrojan(string link)
         {
@@ -340,8 +332,6 @@ namespace Orayo.Services
                 var path   = Q(query, "path") ?? Q(query, "serviceName") ?? string.Empty;
                 var wsHost = Q(query, "host", string.Empty) ?? string.Empty;
                 var finalmask = FinalmaskJson.NormalizeForStorage(Q(query, "fm"));
-                var allowInsecure = IsTruthy(Q(query, "allowInsecure")) || IsTruthy(Q(query, "insecure"));
-
                 return new ServerEntry
                 {
                     Name          = name,
@@ -353,7 +343,6 @@ namespace Orayo.Services
                     Security      = security,
                     Sni           = sni,
                     Fingerprint   = fp,
-                    AllowInsecure = allowInsecure,
                     Path          = path,
                     WsHost        = wsHost,
                     Finalmask     = finalmask,
@@ -417,12 +406,6 @@ namespace Orayo.Services
         private static string? Q(Dictionary<string, string> d, string key, string? def = null)
             => d.TryGetValue(key, out var v) ? v : def;
 
-        private static bool IsTruthy(string? value)
-            => !string.IsNullOrWhiteSpace(value)
-               && (value == "1"
-                   || value.Equals("true", StringComparison.OrdinalIgnoreCase)
-                   || value.Equals("yes", StringComparison.OrdinalIgnoreCase));
-
         private static string NormalizeTrojanNetwork(string network)
         {
             if (string.IsNullOrWhiteSpace(network))
@@ -449,5 +432,3 @@ namespace Orayo.Services
         }
     }
 }
-
-

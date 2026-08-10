@@ -487,12 +487,6 @@ namespace Orayo {
             }
         }
 
-        public static string LabelAllowInsecure {
-            get {
-                return ResourceManager.GetString("LabelAllowInsecure", resourceCulture);
-            }
-        }
-
         public static string LabelEncryption {
             get {
                 return ResourceManager.GetString("LabelEncryption", resourceCulture);
@@ -1048,6 +1042,114 @@ namespace Orayo {
         public static string XrayCore {
             get {
                 return ResourceManager.GetString("XrayCore", resourceCulture);
+            }
+        }
+
+        public static string ButtonSubscribe {
+            get {
+                return ResourceManager.GetString("ButtonSubscribe", resourceCulture);
+            }
+        }
+
+        public static string LabelSubRemarks {
+            get {
+                return ResourceManager.GetString("LabelSubRemarks", resourceCulture);
+            }
+        }
+
+        public static string LabelSubUrl {
+            get {
+                return ResourceManager.GetString("LabelSubUrl", resourceCulture);
+            }
+        }
+
+        public static string MsgSubFetchFailed {
+            get {
+                return ResourceManager.GetString("MsgSubFetchFailed", resourceCulture);
+            }
+        }
+
+        public static string MsgSubImportDone {
+            get {
+                return ResourceManager.GetString("MsgSubImportDone", resourceCulture);
+            }
+        }
+
+        public static string MsgSubImported {
+            get {
+                return ResourceManager.GetString("MsgSubImported", resourceCulture);
+            }
+        }
+
+        public static string MsgSubNone {
+            get {
+                return ResourceManager.GetString("MsgSubNone", resourceCulture);
+            }
+        }
+
+        public static string MsgSubNoNodes {
+            get {
+                return ResourceManager.GetString("MsgSubNoNodes", resourceCulture);
+            }
+        }
+
+        public static string MsgSubRefreshDone {
+            get {
+                return ResourceManager.GetString("MsgSubRefreshDone", resourceCulture);
+            }
+        }
+
+        public static string MsgSubRefreshFailed {
+            get {
+                return ResourceManager.GetString("MsgSubRefreshFailed", resourceCulture);
+            }
+        }
+
+        public static string MsgSubSaveFailed {
+            get {
+                return ResourceManager.GetString("MsgSubSaveFailed", resourceCulture);
+            }
+        }
+
+        public static string TipRefreshSubscriptions {
+            get {
+                return ResourceManager.GetString("TipRefreshSubscriptions", resourceCulture);
+            }
+        }
+
+        public static string TipSubscribe {
+            get {
+                return ResourceManager.GetString("TipSubscribe", resourceCulture);
+            }
+        }
+
+        public static string TitleSubscribe {
+            get {
+                return ResourceManager.GetString("TitleSubscribe", resourceCulture);
+            }
+        }
+
+        public static string MenuDeleteSubscription {
+            get {
+                return ResourceManager.GetString("MenuDeleteSubscription", resourceCulture);
+            }
+        }
+
+        public static string TitleDeleteSubscription {
+            get {
+                return ResourceManager.GetString("TitleDeleteSubscription", resourceCulture);
+            }
+        }
+
+        public static string MsgConfirmDeleteSubscription {
+            get {
+                return ResourceManager.GetString("MsgConfirmDeleteSubscription", resourceCulture);
+            }
+        }
+
+        public static string ErrXrayPortNotReady {
+            get {
+                return ResourceManager.GetString("ErrXrayPortNotReady", resourceCulture);
             }
         }
     }

@@ -13,7 +13,6 @@ namespace Orayo.Services;
 
 public sealed class TunBrokerHost
 {
-    private static readonly TimeSpan IdleShutdownWhenStopped = TimeSpan.FromSeconds(5);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         TypeInfoResolver = new DefaultJsonTypeInfoResolver()
@@ -21,12 +20,6 @@ public sealed class TunBrokerHost
 
     private readonly XrayService _xray = new();
     private bool _shutdownRequested;
-    private DateTimeOffset _lastCommandAt = DateTimeOffset.UtcNow;
-
-    public TunBrokerHost()
-    {
-        _xray.RunningChanged += OnXrayRunningChanged;
-    }
 
     public async Task RunAsync()
     {
@@ -34,15 +27,10 @@ public sealed class TunBrokerHost
         {
             using var server = CreatePipeServer();
 
-            var connected = await WaitForConnectionWithIdleShutdownAsync(server);
-            if (!connected)
-            {
-                continue;
-            }
+            await server.WaitForConnectionAsync();
 
             server.ReadMode = PipeTransmissionMode.Message;
             var requestText = await ReadMessageAsync(server);
-            _lastCommandAt = DateTimeOffset.UtcNow;
             var response = await HandleRequestAsync(requestText);
             var responseText = JsonSerializer.Serialize(response, JsonOptions);
             var responseBytes = Encoding.UTF8.GetBytes(responseText);
@@ -92,28 +80,6 @@ public sealed class TunBrokerHost
         while (!stream.IsMessageComplete);
 
         return ms.Length == 0 ? null : Encoding.UTF8.GetString(ms.ToArray());
-    }
-
-    private async Task<bool> WaitForConnectionWithIdleShutdownAsync(NamedPipeServerStream server)
-    {
-        while (!_shutdownRequested)
-        {
-            var waitTask = server.WaitForConnectionAsync();
-            var completed = await Task.WhenAny(waitTask, Task.Delay(500));
-            if (completed == waitTask)
-            {
-                await waitTask;
-                return true;
-            }
-
-            if (!_xray.IsRunning && DateTimeOffset.UtcNow - _lastCommandAt >= IdleShutdownWhenStopped)
-            {
-                _shutdownRequested = true;
-                return false;
-            }
-        }
-
-        return false;
     }
 
     private async Task<TunBrokerResponse> HandleRequestAsync(string? requestText)
@@ -175,11 +141,6 @@ public sealed class TunBrokerHost
         await StopAsync();
         _shutdownRequested = true;
         return Ok();
-    }
-
-    private void OnXrayRunningChanged(object? sender, bool running)
-    {
-        _ = running;
     }
 
     private TunBrokerResponse Ok()
