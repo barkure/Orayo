@@ -70,9 +70,8 @@ public class XrayService
     public static readonly string RulesDir = Path.Combine(
         AppContext.BaseDirectory, "Assets", "rules");
 
-    private static readonly string ConfigPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Orayo", "xray_config.json");
+    private readonly string _configPath;
+    private readonly bool _deleteConfigOnStop;
 
     private const int LogBufferMax = 500;
 
@@ -91,6 +90,14 @@ public class XrayService
 
     public event EventHandler<string>? LogReceived;
     public event EventHandler<bool>? RunningChanged;
+
+    public XrayService(string? configPath = null, bool deleteConfigOnStop = false)
+    {
+        _configPath = configPath ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Orayo", "xray_config.json");
+        _deleteConfigOnStop = deleteConfigOnStop;
+    }
 
     public IReadOnlyList<string> GetLogBuffer()
     {
@@ -202,13 +209,13 @@ public class XrayService
 
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
-            await File.WriteAllTextAsync(ConfigPath, configJson);
+            Directory.CreateDirectory(Path.GetDirectoryName(_configPath)!);
+            await File.WriteAllTextAsync(_configPath, configJson);
 
             var psi = new ProcessStartInfo
             {
                 FileName = ExePath,
-                Arguments = $"run -config \"{ConfigPath}\"",
+                Arguments = $"run -config \"{_configPath}\"",
                 WorkingDirectory = Path.GetDirectoryName(ExePath)!,
                 CreateNoWindow = true,
                 UseShellExecute = false,
@@ -217,38 +224,39 @@ public class XrayService
             };
             psi.EnvironmentVariables["XRAY_LOCATION_ASSET"] = RulesDir;
 
-            _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            _process.OutputDataReceived += (_, e) =>
+            var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            _process = process;
+            process.OutputDataReceived += (_, e) =>
             {
                 if (e.Data is null) return;
                 AppendStartupLog(e.Data);
                 AppendLog(e.Data);
             };
-            _process.ErrorDataReceived += (_, e) =>
+            process.ErrorDataReceived += (_, e) =>
             {
                 if (e.Data is null) return;
                 AppendStartupLog(e.Data);
                 AppendLog(e.Data);
             };
-            _process.Exited += OnProcessExited;
+            process.Exited += OnProcessExited;
 
             BeginStartupLogCapture();
-            _process.Start();
-            TryAttachJobObject(_process);
-            _process.BeginOutputReadLine();
-            _process.BeginErrorReadLine();
+            process.Start();
+            TryAttachJobObject(process);
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
             AppendLog(string.Format(Strings.LogStart, ExePath));
-            AppendLog(string.Format(Strings.LogConfig, ConfigPath));
+            AppendLog(string.Format(Strings.LogConfig, _configPath));
 
             // Wait until the local inbound actually accepts connections (instead of a
             // fixed delay), so startup returns as soon as the core is really ready.
             var localPortReady = await WaitForLocalPortReadyAsync(configJson);
 
-            if (_process.HasExited)
+            if (process.HasExited)
             {
                 var startupLog = StopStartupLogCaptureAndRead();
-                LastError = startupLog.Length > 0 ? startupLog : string.Format(Strings.ErrXrayExitImmediately, _process.ExitCode);
+                LastError = startupLog.Length > 0 ? startupLog : string.Format(Strings.ErrXrayExitImmediately, process.ExitCode);
                 AppendLog(string.Format(Strings.LogStartFailed, LastError));
                 DisposeExitedProcess();
                 return false;
@@ -286,6 +294,7 @@ public class XrayService
     {
         if (_process is null)
         {
+            DeleteEphemeralConfig();
             return;
         }
 
@@ -308,6 +317,7 @@ public class XrayService
         }
 
         AppendLog(Strings.LogStopped);
+        DeleteEphemeralConfig();
         RunningChanged?.Invoke(this, false);
     }
 
@@ -386,6 +396,7 @@ public class XrayService
         if (process is null)
         {
             CloseJobObject();
+            DeleteEphemeralConfig();
             return;
         }
 
@@ -404,6 +415,7 @@ public class XrayService
         finally
         {
             CloseJobObject();
+            DeleteEphemeralConfig();
         }
     }
 
@@ -482,6 +494,8 @@ public class XrayService
         var process = _process;
         if (process is null)
         {
+            CloseJobObject();
+            DeleteEphemeralConfig();
             return;
         }
 
@@ -499,6 +513,8 @@ public class XrayService
         finally
         {
             process.Dispose();
+            CloseJobObject();
+            DeleteEphemeralConfig();
         }
 
         AppendLog("[shutdown] xray stopped");
@@ -508,6 +524,26 @@ public class XrayService
     private void OnProcessExited(object? sender, EventArgs e)
     {
         AppendLog(Strings.LogXrayExited);
+        DeleteEphemeralConfig();
         RunningChanged?.Invoke(this, false);
+    }
+
+    private void DeleteEphemeralConfig()
+    {
+        if (!_deleteConfigOnStop)
+        {
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(_configPath))
+            {
+                File.Delete(_configPath);
+            }
+        }
+        catch
+        {
+        }
     }
 }

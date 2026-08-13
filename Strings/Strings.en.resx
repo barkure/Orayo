@@ -415,8 +415,38 @@
   <data name="ErrTunModeError" xml:space="preserve">
     <value>TUN Mode Error</value>
   </data>
-  <data name="ErrCannotStartTunBroker" xml:space="preserve">
-    <value>Failed to start TUN privilege broker.</value>
+  <data name="MsgTunNeedAdmin" xml:space="preserve">
+    <value>TUN mode needs an elevated helper process. Authorize it now?</value>
+  </data>
+  <data name="ButtonAuthorizeTun" xml:space="preserve">
+    <value>Authorize TUN</value>
+  </data>
+  <data name="ErrCannotDetermineExePath" xml:space="preserve">
+    <value>Cannot determine the Orayo.exe path.</value>
+  </data>
+  <data name="ErrCannotDetermineUserSid" xml:space="preserve">
+    <value>Cannot determine the current user identity.</value>
+  </data>
+  <data name="ErrCannotStartTunHelper" xml:space="preserve">
+    <value>Unable to start or connect to the elevated TUN helper.</value>
+  </data>
+  <data name="ErrUacCancelled" xml:space="preserve">
+    <value>TUN administrator authorization was cancelled.</value>
+  </data>
+  <data name="ErrTunHelperStartFailed" xml:space="preserve">
+    <value>Failed to start the elevated TUN helper: {0}</value>
+  </data>
+  <data name="ErrTunHelperNoResponse" xml:space="preserve">
+    <value>The elevated TUN helper did not respond after startup.</value>
+  </data>
+  <data name="ErrTunHelperEmptyResponse" xml:space="preserve">
+    <value>The elevated TUN helper returned an empty response.</value>
+  </data>
+  <data name="ErrTunHelperInvalidRequest" xml:space="preserve">
+    <value>The elevated TUN helper received an invalid request.</value>
+  </data>
+  <data name="ErrTunHelperUnauthorized" xml:space="preserve">
+    <value>The elevated TUN helper rejected an unauthorized request.</value>
   </data>
   <data name="ErrWintunNotFound" xml:space="preserve">
     <value>wintun.dll not found.
@@ -504,46 +534,6 @@ Path: {3}</value>
     <value>Local port {0} is in use and the occupying process could not be identified: {1}</value>
   </data>
 
-  <!-- TunBrokerClient -->
-  <data name="ErrCannotDetermineExePath" xml:space="preserve">
-    <value>Cannot determine Orayo.exe path.</value>
-  </data>
-  <data name="ErrUacCancelled" xml:space="preserve">
-    <value>UAC authorization cancelled.</value>
-  </data>
-  <data name="ErrTunBrokerStartFailed" xml:space="preserve">
-    <value>Failed to start TUN privilege broker: </value>
-  </data>
-  <data name="ErrTunBrokerNoResponse" xml:space="preserve">
-    <value>TUN privilege broker did not respond after startup.</value>
-  </data>
-  <data name="ErrTunBrokerNoResponseWith" xml:space="preserve">
-    <value>TUN privilege broker did not respond: </value>
-  </data>
-  <data name="ErrTunBrokerXrayFailed" xml:space="preserve">
-    <value>TUN privilege broker failed to start xray.</value>
-  </data>
-  <data name="ErrTunBrokerEmptyResponse" xml:space="preserve">
-    <value>Privilege broker returned an empty response.</value>
-  </data>
-
-  <!-- TunBrokerHost -->
-  <data name="ErrTunBrokerError" xml:space="preserve">
-    <value>TUN Broker Error</value>
-  </data>
-  <data name="ErrRequestEmpty" xml:space="preserve">
-    <value>Request is empty.</value>
-  </data>
-  <data name="ErrRequestInvalid" xml:space="preserve">
-    <value>Request is invalid.</value>
-  </data>
-  <data name="ErrUnknownCommand" xml:space="preserve">
-    <value>Unknown command: {0}</value>
-  </data>
-  <data name="ErrMissingConfig" xml:space="preserve">
-    <value>Missing configuration.</value>
-  </data>
-
   <!-- DnsPresetService -->
   <data name="ErrDnsJsonEmpty" xml:space="preserve">
     <value>DNS JSON cannot be empty.</value>
@@ -598,57 +588,5 @@ Path: {3}</value>
   </data>
   <data name="TrayExit" xml:space="preserve">
     <value>Exit</value>
-  </data>
-  <!-- Subscription -->
-  <data name="TipSubscribe" xml:space="preserve">
-    <value>Add subscription</value>
-  </data>
-  <data name="TipRefreshSubscriptions" xml:space="preserve">
-    <value>Refresh subscriptions</value>
-  </data>
-  <data name="TitleSubscribe" xml:space="preserve">
-    <value>Add Subscription</value>
-  </data>
-  <data name="LabelSubUrl" xml:space="preserve">
-    <value>Subscription URL</value>
-  </data>
-  <data name="LabelSubRemarks" xml:space="preserve">
-    <value>Remark (optional)</value>
-  </data>
-  <data name="ButtonSubscribe" xml:space="preserve">
-    <value>Subscribe</value>
-  </data>
-  <data name="MsgSubFetchFailed" xml:space="preserve">
-    <value>Failed to fetch subscription: {0}</value>
-  </data>
-  <data name="MsgSubNoNodes" xml:space="preserve">
-    <value>No nodes parsed from the subscription</value>
-  </data>
-  <data name="MsgSubImportDone" xml:space="preserve">
-    <value>Subscription imported</value>
-  </data>
-  <data name="MsgSubImported" xml:space="preserve">
-    <value>Imported {0} nodes from the subscription</value>
-  </data>
-  <data name="MsgSubNone" xml:space="preserve">
-    <value>No subscriptions available. Add one first.</value>
-  </data>
-  <data name="MsgSubRefreshDone" xml:space="preserve">
-    <value>Subscription refresh done: {0} succeeded, {1} failed</value>
-  </data>
-  <data name="MsgSubRefreshFailed" xml:space="preserve">
-    <value>Subscription refresh failed: {0}</value>
-  </data>
-  <data name="MsgSubSaveFailed" xml:space="preserve">
-    <value>Failed to save subscription data: {0}</value>
-  </data>
-  <data name="MenuDeleteSubscription" xml:space="preserve">
-    <value>Delete subscription</value>
-  </data>
-  <data name="TitleDeleteSubscription" xml:space="preserve">
-    <value>Delete Subscription</value>
-  </data>
-  <data name="MsgConfirmDeleteSubscription" xml:space="preserve">
-    <value>Delete subscription "{0}" and all of its nodes?</value>
   </data>
 </root>

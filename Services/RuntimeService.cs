@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Orayo;
 using Orayo.Models;
@@ -9,12 +10,14 @@ public sealed class RuntimeService
 {
     private readonly XrayService _localXray = new();
     private readonly TunService _tunService = new();
-    private readonly TunBrokerClient _tunBroker = new();
+    private readonly TunHelperClient _tunHelper = new();
     private ServerEntry? _activeServer;
     private bool _isRunning;
     private bool _isTunSession;
     private bool _isTransitioning;
     private bool _isShuttingDown;
+    private CancellationTokenSource? _tunMonitorCts;
+    private Task? _tunMonitorTask;
 
     public RuntimeService()
     {
@@ -27,30 +30,13 @@ public sealed class RuntimeService
 
     public string LastError => _localXray.LastError;
 
-    public string TunBrokerLastError => _tunBroker.LastError;
+    public string TunHelperLastError => _tunHelper.LastError;
 
     public event EventHandler? StateChanged;
 
-    public async Task<bool> EnsureTunBrokerAvailableAsync()
-    {
-        return await _tunBroker.EnsureBrokerAvailableAsync();
-    }
+    public Task<bool> IsTunHelperAvailableAsync() => _tunHelper.IsAvailableAsync();
 
-    public async Task<bool> EnsureTunBrokerStoppedAsync()
-    {
-        await _tunBroker.ShutdownAsync();
-        for (var attempt = 0; attempt < 20; attempt++)
-        {
-            await Task.Delay(100);
-            var status = await _tunBroker.GetStatusAsync();
-            if (status is null)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    public Task<bool> EnsureTunHelperAvailableAsync() => _tunHelper.EnsureAvailableAsync();
 
     public async Task<RuntimeConnectResult> ConnectAsync(ServerEntry server, AppSettings settings, AppRuntimeState runtimeState)
     {
@@ -61,6 +47,8 @@ public sealed class RuntimeService
             {
                 await StopLocalSessionIfNeededAsync();
                 await StopTunSessionIfNeededAsync();
+                SystemProxyService.ClearProxy();
+                UpdateState(isRunning: false, activeServer: null, isTunSession: false);
 
                 var portConflict = await PortConflictService.EnsurePortsAvailableForCurrentXrayAsync(settings.LocalSocksPort, settings.LocalHttpPort);
                 if (!string.IsNullOrWhiteSpace(portConflict))
@@ -73,31 +61,35 @@ public sealed class RuntimeService
                     return RuntimeConnectResult.Failed(Strings.ErrTunModeError, string.Format(Strings.ErrWintunNotFound, _tunService.GetExpectedWintunPath()));
                 }
 
-                if (!await _tunBroker.EnsureBrokerAvailableAsync())
+                if (!await _tunHelper.IsAvailableAsync())
                 {
-                    return RuntimeConnectResult.Failed(Strings.ErrTunModeError, Strings.ErrCannotStartTunBroker);
+                    return RuntimeConnectResult.Failed(
+                        Strings.ErrTunModeError,
+                        string.IsNullOrWhiteSpace(_tunHelper.LastError) ? Strings.ErrCannotStartTunHelper : _tunHelper.LastError);
                 }
 
-                SystemProxyService.ClearProxy();
-
                 var config = XrayConfigBuilder.Build(server, settings);
-                var response = await _tunBroker.StartAsync(config);
+                var response = await _tunHelper.StartAsync(config);
                 if (response?.Success != true)
                 {
                     SystemProxyService.ClearProxy();
-                    UpdateState(isRunning: false, activeServer: null, isTunSession: true);
                     return RuntimeConnectResult.Failed(
-                        response?.ErrorTitle ?? Strings.ErrConnectionFailed,
-                        response?.ErrorMessage ?? Strings.ErrTunStartFailed);
+                        response?.ErrorTitle ?? Strings.ErrTunModeError,
+                        response?.ErrorMessage
+                            ?? (string.IsNullOrWhiteSpace(_tunHelper.LastError) ? Strings.ErrTunStartFailed : _tunHelper.LastError));
                 }
 
                 SystemProxyService.ClearProxy();
                 runtimeState.LastSelectedServerId = server.Id;
                 UpdateState(isRunning: true, activeServer: server, isTunSession: true);
+                await StartTunMonitorAsync();
                 return RuntimeConnectResult.Succeeded();
             }
 
             await StopTunSessionIfNeededAsync();
+            await StopLocalSessionIfNeededAsync();
+            SystemProxyService.ClearProxy();
+            UpdateState(isRunning: false, activeServer: null, isTunSession: false);
 
             var localPortConflict = await PortConflictService.EnsurePortsAvailableForCurrentXrayAsync(settings.LocalSocksPort, settings.LocalHttpPort);
             if (!string.IsNullOrWhiteSpace(localPortConflict))
@@ -106,8 +98,8 @@ public sealed class RuntimeService
             }
 
             var localConfig = XrayConfigBuilder.Build(server, settings);
-            var ok = await _localXray.StartAsync(localConfig);
-            if (!ok)
+            var localOk = await _localXray.StartAsync(localConfig);
+            if (!localOk)
             {
                 SystemProxyService.ClearProxy();
                 UpdateState(isRunning: false, activeServer: null, isTunSession: false);
@@ -148,9 +140,10 @@ public sealed class RuntimeService
         _isShuttingDown = true;
         try
         {
+            await StopTunMonitorAsync();
             SystemProxyService.ClearProxy();
             _localXray.StopForShutdown();
-            await EnsureTunBrokerStoppedAsync();
+            await _tunHelper.ShutdownAsync();
             UpdateState(isRunning: false, activeServer: null, isTunSession: false);
         }
         finally
@@ -189,31 +182,111 @@ public sealed class RuntimeService
 
     private async Task StopTunSessionIfNeededAsync()
     {
-        if (!_isTunSession && !await IsBrokerRunningAsync())
+        await StopTunMonitorAsync();
+        if (!_isTunSession)
         {
-            return;
+            var status = await _tunHelper.GetStatusAsync();
+            if (status?.IsRunning != true)
+            {
+                return;
+            }
         }
 
-        // Stop the core inside the broker but keep the broker process alive so the
-        // next TUN start does not pay UAC + cold-start again.
-        await _tunBroker.StopAsync();
-    }
-
-    private async Task<bool> IsBrokerRunningAsync()
-    {
-        var status = await _tunBroker.GetStatusAsync();
-        return status?.IsRunning == true;
+        await _tunHelper.StopAsync();
     }
 
     private void OnLocalXrayRunningChanged(object? sender, bool running)
     {
-        if (running || _isTransitioning || _isShuttingDown || _isTunSession)
+        if (running || _isTransitioning || _isShuttingDown)
         {
             return;
         }
 
         SystemProxyService.ClearProxy();
         UpdateState(isRunning: false, activeServer: null, isTunSession: false);
+    }
+
+    private async Task StartTunMonitorAsync()
+    {
+        await StopTunMonitorAsync();
+        var cts = new CancellationTokenSource();
+        var monitorTask = MonitorTunSessionAsync(cts, cts.Token);
+        _tunMonitorCts = cts;
+        _tunMonitorTask = monitorTask;
+    }
+
+    private async Task MonitorTunSessionAsync(CancellationTokenSource owner, CancellationToken cancellationToken)
+    {
+        var failedProbes = 0;
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
+                var status = await _tunHelper.GetStatusAsync(cancellationToken).ConfigureAwait(false);
+                if (status?.Success == true && status.IsRunning)
+                {
+                    failedProbes = 0;
+                    continue;
+                }
+
+                failedProbes++;
+                if (status?.Success == true || failedProbes >= 3)
+                {
+                    if (ReferenceEquals(_tunMonitorCts, owner)
+                        && !_isTransitioning
+                        && !_isShuttingDown
+                        && _isTunSession)
+                    {
+                        SystemProxyService.ClearProxy();
+                        UpdateState(isRunning: false, activeServer: null, isTunSession: false);
+                    }
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+            if (ReferenceEquals(_tunMonitorCts, owner)
+                && !_isTransitioning
+                && !_isShuttingDown
+                && _isTunSession)
+            {
+                SystemProxyService.ClearProxy();
+                UpdateState(isRunning: false, activeServer: null, isTunSession: false);
+            }
+        }
+    }
+
+    private async Task StopTunMonitorAsync()
+    {
+        var cts = _tunMonitorCts;
+        var monitorTask = _tunMonitorTask;
+        _tunMonitorCts = null;
+        _tunMonitorTask = null;
+        if (cts is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cts.Cancel();
+            if (monitorTask is not null)
+            {
+                await monitorTask.ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            cts.Dispose();
+        }
     }
 
     private void UpdateState(bool isRunning, ServerEntry? activeServer, bool isTunSession)

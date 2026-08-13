@@ -33,7 +33,6 @@ public class ServerEntry : INotifyPropertyChanged
     private string _flow = string.Empty;
     private string _vlessEncryption = string.Empty;
     private string _finalmask = string.Empty;
-    private string _subscriptionId = string.Empty;
     private bool _isActive;
     private string _latencyBadgeText = string.Empty;
     private Visibility _latencyBadgeVisibility = Visibility.Collapsed;
@@ -83,22 +82,6 @@ public class ServerEntry : INotifyPropertyChanged
     public string Flow { get => _flow; set => SetProperty(ref _flow, value); }
     public string VlessEncryption { get => _vlessEncryption; set => SetProperty(ref _vlessEncryption, value); }
     public string Finalmask { get => _finalmask; set => SetProperty(ref _finalmask, value); }
-
-    /// <summary>Id of the subscription this node came from, or empty for manually added nodes.</summary>
-    public string SubscriptionId
-    {
-        get => _subscriptionId;
-        set
-        {
-            if (SetProperty(ref _subscriptionId, value))
-            {
-                OnPropertyChanged(nameof(SubscriptionVisibility));
-            }
-        }
-    }
-
-    [JsonIgnore]
-    public Visibility SubscriptionVisibility => string.IsNullOrEmpty(SubscriptionId) ? Visibility.Collapsed : Visibility.Visible;
 
     public bool IsActive
     {
@@ -179,7 +162,6 @@ public class ServerEntry : INotifyPropertyChanged
         Flow = Flow,
         VlessEncryption = VlessEncryption,
         Finalmask = Finalmask,
-        SubscriptionId = SubscriptionId,
         IsActive = IsActive,
     };
 

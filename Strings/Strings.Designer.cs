@@ -121,6 +121,12 @@ namespace Orayo {
             }
         }
 
+        public static string ButtonAuthorizeTun {
+            get {
+                return ResourceManager.GetString("ButtonAuthorizeTun", resourceCulture);
+            }
+        }
+
         public static string ButtonSave {
             get {
                 return ResourceManager.GetString("ButtonSave", resourceCulture);
@@ -157,6 +163,18 @@ namespace Orayo {
             }
         }
 
+        public static string ErrCannotDetermineExePath {
+            get {
+                return ResourceManager.GetString("ErrCannotDetermineExePath", resourceCulture);
+            }
+        }
+
+        public static string ErrCannotDetermineUserSid {
+            get {
+                return ResourceManager.GetString("ErrCannotDetermineUserSid", resourceCulture);
+            }
+        }
+
         public static string ErrCannotDelete {
             get {
                 return ResourceManager.GetString("ErrCannotDelete", resourceCulture);
@@ -166,12 +184,6 @@ namespace Orayo {
         public static string ErrCannotDeleteActive {
             get {
                 return ResourceManager.GetString("ErrCannotDeleteActive", resourceCulture);
-            }
-        }
-
-        public static string ErrCannotDetermineExePath {
-            get {
-                return ResourceManager.GetString("ErrCannotDetermineExePath", resourceCulture);
             }
         }
 
@@ -187,9 +199,9 @@ namespace Orayo {
             }
         }
 
-        public static string ErrCannotStartTunBroker {
+        public static string ErrCannotStartTunHelper {
             get {
-                return ResourceManager.GetString("ErrCannotStartTunBroker", resourceCulture);
+                return ResourceManager.GetString("ErrCannotStartTunHelper", resourceCulture);
             }
         }
 
@@ -271,12 +283,6 @@ namespace Orayo {
             }
         }
 
-        public static string ErrMissingConfig {
-            get {
-                return ResourceManager.GetString("ErrMissingConfig", resourceCulture);
-            }
-        }
-
         public static string ErrMonacoInitFailed {
             get {
                 return ResourceManager.GetString("ErrMonacoInitFailed", resourceCulture);
@@ -304,18 +310,6 @@ namespace Orayo {
         public static string ErrPortConflictUnknown {
             get {
                 return ResourceManager.GetString("ErrPortConflictUnknown", resourceCulture);
-            }
-        }
-
-        public static string ErrRequestEmpty {
-            get {
-                return ResourceManager.GetString("ErrRequestEmpty", resourceCulture);
-            }
-        }
-
-        public static string ErrRequestInvalid {
-            get {
-                return ResourceManager.GetString("ErrRequestInvalid", resourceCulture);
             }
         }
 
@@ -355,39 +349,33 @@ namespace Orayo {
             }
         }
 
-        public static string ErrTunBrokerEmptyResponse {
+        public static string ErrTunHelperEmptyResponse {
             get {
-                return ResourceManager.GetString("ErrTunBrokerEmptyResponse", resourceCulture);
+                return ResourceManager.GetString("ErrTunHelperEmptyResponse", resourceCulture);
             }
         }
 
-        public static string ErrTunBrokerError {
+        public static string ErrTunHelperInvalidRequest {
             get {
-                return ResourceManager.GetString("ErrTunBrokerError", resourceCulture);
+                return ResourceManager.GetString("ErrTunHelperInvalidRequest", resourceCulture);
             }
         }
 
-        public static string ErrTunBrokerNoResponse {
+        public static string ErrTunHelperNoResponse {
             get {
-                return ResourceManager.GetString("ErrTunBrokerNoResponse", resourceCulture);
+                return ResourceManager.GetString("ErrTunHelperNoResponse", resourceCulture);
             }
         }
 
-        public static string ErrTunBrokerNoResponseWith {
+        public static string ErrTunHelperStartFailed {
             get {
-                return ResourceManager.GetString("ErrTunBrokerNoResponseWith", resourceCulture);
+                return ResourceManager.GetString("ErrTunHelperStartFailed", resourceCulture);
             }
         }
 
-        public static string ErrTunBrokerStartFailed {
+        public static string ErrTunHelperUnauthorized {
             get {
-                return ResourceManager.GetString("ErrTunBrokerStartFailed", resourceCulture);
-            }
-        }
-
-        public static string ErrTunBrokerXrayFailed {
-            get {
-                return ResourceManager.GetString("ErrTunBrokerXrayFailed", resourceCulture);
+                return ResourceManager.GetString("ErrTunHelperUnauthorized", resourceCulture);
             }
         }
 
@@ -412,12 +400,6 @@ namespace Orayo {
         public static string ErrUpdateVersionLower {
             get {
                 return ResourceManager.GetString("ErrUpdateVersionLower", resourceCulture);
-            }
-        }
-
-        public static string ErrUnknownCommand {
-            get {
-                return ResourceManager.GetString("ErrUnknownCommand", resourceCulture);
             }
         }
 
@@ -706,6 +688,12 @@ namespace Orayo {
         public static string MsgShareLinkCopied {
             get {
                 return ResourceManager.GetString("MsgShareLinkCopied", resourceCulture);
+            }
+        }
+
+        public static string MsgTunNeedAdmin {
+            get {
+                return ResourceManager.GetString("MsgTunNeedAdmin", resourceCulture);
             }
         }
 
@@ -1042,108 +1030,6 @@ namespace Orayo {
         public static string XrayCore {
             get {
                 return ResourceManager.GetString("XrayCore", resourceCulture);
-            }
-        }
-
-        public static string ButtonSubscribe {
-            get {
-                return ResourceManager.GetString("ButtonSubscribe", resourceCulture);
-            }
-        }
-
-        public static string LabelSubRemarks {
-            get {
-                return ResourceManager.GetString("LabelSubRemarks", resourceCulture);
-            }
-        }
-
-        public static string LabelSubUrl {
-            get {
-                return ResourceManager.GetString("LabelSubUrl", resourceCulture);
-            }
-        }
-
-        public static string MsgSubFetchFailed {
-            get {
-                return ResourceManager.GetString("MsgSubFetchFailed", resourceCulture);
-            }
-        }
-
-        public static string MsgSubImportDone {
-            get {
-                return ResourceManager.GetString("MsgSubImportDone", resourceCulture);
-            }
-        }
-
-        public static string MsgSubImported {
-            get {
-                return ResourceManager.GetString("MsgSubImported", resourceCulture);
-            }
-        }
-
-        public static string MsgSubNone {
-            get {
-                return ResourceManager.GetString("MsgSubNone", resourceCulture);
-            }
-        }
-
-        public static string MsgSubNoNodes {
-            get {
-                return ResourceManager.GetString("MsgSubNoNodes", resourceCulture);
-            }
-        }
-
-        public static string MsgSubRefreshDone {
-            get {
-                return ResourceManager.GetString("MsgSubRefreshDone", resourceCulture);
-            }
-        }
-
-        public static string MsgSubRefreshFailed {
-            get {
-                return ResourceManager.GetString("MsgSubRefreshFailed", resourceCulture);
-            }
-        }
-
-        public static string MsgSubSaveFailed {
-            get {
-                return ResourceManager.GetString("MsgSubSaveFailed", resourceCulture);
-            }
-        }
-
-        public static string TipRefreshSubscriptions {
-            get {
-                return ResourceManager.GetString("TipRefreshSubscriptions", resourceCulture);
-            }
-        }
-
-        public static string TipSubscribe {
-            get {
-                return ResourceManager.GetString("TipSubscribe", resourceCulture);
-            }
-        }
-
-        public static string TitleSubscribe {
-            get {
-                return ResourceManager.GetString("TitleSubscribe", resourceCulture);
-            }
-        }
-
-        public static string MenuDeleteSubscription {
-            get {
-                return ResourceManager.GetString("MenuDeleteSubscription", resourceCulture);
-            }
-        }
-
-        public static string TitleDeleteSubscription {
-            get {
-                return ResourceManager.GetString("TitleDeleteSubscription", resourceCulture);
-            }
-        }
-
-        public static string MsgConfirmDeleteSubscription {
-            get {
-                return ResourceManager.GetString("MsgConfirmDeleteSubscription", resourceCulture);
             }
         }
 

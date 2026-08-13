@@ -415,8 +415,38 @@
   <data name="ErrTunModeError" xml:space="preserve">
     <value>TUN 模式错误</value>
   </data>
-  <data name="ErrCannotStartTunBroker" xml:space="preserve">
-    <value>无法启动 TUN 权限代理。</value>
+  <data name="MsgTunNeedAdmin" xml:space="preserve">
+    <value>TUN 模式需要启动管理员权限的辅助进程。是否授权？</value>
+  </data>
+  <data name="ButtonAuthorizeTun" xml:space="preserve">
+    <value>授权 TUN</value>
+  </data>
+  <data name="ErrCannotDetermineExePath" xml:space="preserve">
+    <value>无法确定 Orayo.exe 路径。</value>
+  </data>
+  <data name="ErrCannotDetermineUserSid" xml:space="preserve">
+    <value>无法确定当前用户身份。</value>
+  </data>
+  <data name="ErrCannotStartTunHelper" xml:space="preserve">
+    <value>无法启动或连接 TUN 权限辅助进程。</value>
+  </data>
+  <data name="ErrUacCancelled" xml:space="preserve">
+    <value>已取消 TUN 管理员授权。</value>
+  </data>
+  <data name="ErrTunHelperStartFailed" xml:space="preserve">
+    <value>启动 TUN 权限辅助进程失败：{0}</value>
+  </data>
+  <data name="ErrTunHelperNoResponse" xml:space="preserve">
+    <value>TUN 权限辅助进程启动后未响应。</value>
+  </data>
+  <data name="ErrTunHelperEmptyResponse" xml:space="preserve">
+    <value>TUN 权限辅助进程返回了空响应。</value>
+  </data>
+  <data name="ErrTunHelperInvalidRequest" xml:space="preserve">
+    <value>TUN 权限辅助进程收到无效请求。</value>
+  </data>
+  <data name="ErrTunHelperUnauthorized" xml:space="preserve">
+    <value>TUN 权限辅助进程拒绝了未授权请求。</value>
   </data>
   <data name="ErrWintunNotFound" xml:space="preserve">
     <value>找不到 wintun.dll
@@ -504,46 +534,6 @@
     <value>本地端口 {0} 已被占用，且无法识别占用进程：{1}</value>
   </data>
 
-  <!-- TunBrokerClient -->
-  <data name="ErrCannotDetermineExePath" xml:space="preserve">
-    <value>无法确定 Orayo.exe 路径。</value>
-  </data>
-  <data name="ErrUacCancelled" xml:space="preserve">
-    <value>已取消 UAC 授权。</value>
-  </data>
-  <data name="ErrTunBrokerStartFailed" xml:space="preserve">
-    <value>启动 TUN 权限代理失败：</value>
-  </data>
-  <data name="ErrTunBrokerNoResponse" xml:space="preserve">
-    <value>TUN 权限代理启动后未响应。</value>
-  </data>
-  <data name="ErrTunBrokerNoResponseWith" xml:space="preserve">
-    <value>TUN 权限代理启动后未响应：</value>
-  </data>
-  <data name="ErrTunBrokerXrayFailed" xml:space="preserve">
-    <value>TUN 权限代理启动 xray 失败。</value>
-  </data>
-  <data name="ErrTunBrokerEmptyResponse" xml:space="preserve">
-    <value>权限代理返回了空响应。</value>
-  </data>
-
-  <!-- TunBrokerHost -->
-  <data name="ErrTunBrokerError" xml:space="preserve">
-    <value>TUN Broker 错误</value>
-  </data>
-  <data name="ErrRequestEmpty" xml:space="preserve">
-    <value>请求为空。</value>
-  </data>
-  <data name="ErrRequestInvalid" xml:space="preserve">
-    <value>请求无效。</value>
-  </data>
-  <data name="ErrUnknownCommand" xml:space="preserve">
-    <value>未知命令：{0}</value>
-  </data>
-  <data name="ErrMissingConfig" xml:space="preserve">
-    <value>缺少配置。</value>
-  </data>
-
   <!-- DnsPresetService -->
   <data name="ErrDnsJsonEmpty" xml:space="preserve">
     <value>DNS JSON 不能为空。</value>
@@ -598,57 +588,5 @@
   </data>
   <data name="TrayExit" xml:space="preserve">
     <value>退出</value>
-  </data>
-  <!-- Subscription -->
-  <data name="TipSubscribe" xml:space="preserve">
-    <value>添加订阅</value>
-  </data>
-  <data name="TipRefreshSubscriptions" xml:space="preserve">
-    <value>刷新订阅</value>
-  </data>
-  <data name="TitleSubscribe" xml:space="preserve">
-    <value>添加订阅</value>
-  </data>
-  <data name="LabelSubUrl" xml:space="preserve">
-    <value>订阅地址</value>
-  </data>
-  <data name="LabelSubRemarks" xml:space="preserve">
-    <value>备注（可选）</value>
-  </data>
-  <data name="ButtonSubscribe" xml:space="preserve">
-    <value>订阅</value>
-  </data>
-  <data name="MsgSubFetchFailed" xml:space="preserve">
-    <value>订阅获取失败：{0}</value>
-  </data>
-  <data name="MsgSubNoNodes" xml:space="preserve">
-    <value>订阅中没有解析到节点</value>
-  </data>
-  <data name="MsgSubImportDone" xml:space="preserve">
-    <value>订阅导入完成</value>
-  </data>
-  <data name="MsgSubImported" xml:space="preserve">
-    <value>已从订阅导入 {0} 个节点</value>
-  </data>
-  <data name="MsgSubNone" xml:space="preserve">
-    <value>没有可用的订阅，请先添加订阅</value>
-  </data>
-  <data name="MsgSubRefreshDone" xml:space="preserve">
-    <value>订阅刷新完成：成功 {0} 个，失败 {1} 个</value>
-  </data>
-  <data name="MsgSubRefreshFailed" xml:space="preserve">
-    <value>订阅刷新失败：{0}</value>
-  </data>
-  <data name="MsgSubSaveFailed" xml:space="preserve">
-    <value>保存订阅数据失败：{0}</value>
-  </data>
-  <data name="MenuDeleteSubscription" xml:space="preserve">
-    <value>删除该订阅</value>
-  </data>
-  <data name="TitleDeleteSubscription" xml:space="preserve">
-    <value>删除订阅</value>
-  </data>
-  <data name="MsgConfirmDeleteSubscription" xml:space="preserve">
-    <value>确定删除订阅“{0}”及其全部节点？</value>
   </data>
 </root>

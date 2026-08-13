@@ -15,32 +15,40 @@ namespace Orayo;
 public partial class App : Application
 {
     private const string SingleInstanceMutexName = @"Local\Orayo.SingleInstance";
-    private const string BrokerInstanceMutexName = @"Local\Orayo.TunBroker";
     private const string ShowWindowEventName = @"Local\Orayo.ShowWindow";
-    private const string BrokerArgument = "--broker";
     private static Mutex? _singleInstanceMutex;
     private static EventWaitHandle? _showWindowEvent;
     private readonly RuntimeService _runtime = new();
-    private readonly bool _isBrokerMode;
+    private readonly TunHelperLaunchOptions? _tunHelperOptions;
     private MainWindow? _window;
     private Forms.NotifyIcon? _trayIcon;
     private bool _isExiting;
 
     public App()
     {
-        VelopackApp.Build().Run();
-        var cmdArgs = Environment.GetCommandLineArgs();
-        _isBrokerMode = Array.Exists(cmdArgs, arg => string.Equals(arg, BrokerArgument, StringComparison.OrdinalIgnoreCase));
-        if (_isBrokerMode && !TryClaimSingleInstance(BrokerInstanceMutexName))
+        var commandLineArgs = Environment.GetCommandLineArgs();
+        var helperRequested = TunHelperProtocol.IsHelperInvocation(commandLineArgs);
+        TunHelperLaunchOptions.TryParse(commandLineArgs, out var helperOptions);
+        _tunHelperOptions = helperOptions;
+
+        if (helperRequested && _tunHelperOptions is null)
         {
-            Environment.Exit(0);
+            Environment.Exit(2);
             return;
         }
 
-        if (!_isBrokerMode && !TryClaimSingleInstance(SingleInstanceMutexName))
+        if (_tunHelperOptions is null)
         {
-            SignalExistingInstance();
-            Environment.Exit(0);
+            VelopackApp.Build().Run();
+            if (!TryClaimSingleInstance(SingleInstanceMutexName))
+            {
+                SignalExistingInstance();
+                Environment.Exit(0);
+                return;
+            }
+        }
+        else
+        {
             return;
         }
 
@@ -65,10 +73,10 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        if (_isBrokerMode)
+        if (_tunHelperOptions is not null)
         {
-            var broker = new TunBrokerHost();
-            Task.Run(() => broker.RunAsync()).GetAwaiter().GetResult();
+            var helper = new TunHelperHost(_tunHelperOptions);
+            Task.Run(() => helper.RunAsync()).GetAwaiter().GetResult();
             Environment.Exit(0);
             return;
         }

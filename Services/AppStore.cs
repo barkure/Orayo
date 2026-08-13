@@ -25,11 +25,11 @@ public class AppStore
     private string ServersFile => Path.Combine(_dataDir, "servers.json");
     private string SettingsFile => Path.Combine(_dataDir, "settings.json");
     private string RuntimeStateFile => Path.Combine(_dataDir, "runtime_state.json");
-    private string SubscriptionsFile => Path.Combine(_dataDir, "subscriptions.json");
 
     public AppStore()
     {
         Directory.CreateDirectory(_dataDir);
+        DeleteLegacySubscriptionMetadata();
     }
 
     public async Task<List<ServerEntry>> LoadServersAsync()
@@ -63,24 +63,6 @@ public class AppStore
     {
         var json = JsonSerializer.Serialize(runtimeState, JsonOptions);
         return SaveJsonWithBackupAsync(RuntimeStateFile, json);
-    }
-
-    public async Task<List<Subscription>> LoadSubscriptionsAsync()
-    {
-        return await LoadJsonWithBackupAsync(SubscriptionsFile, static () => new List<Subscription>()).ConfigureAwait(false);
-    }
-
-    public Task SaveServersAndSubscriptionsAsync(
-        IReadOnlyList<ServerEntry> servers,
-        IReadOnlyList<Subscription> subscriptions)
-    {
-        var serversJson = JsonSerializer.Serialize(servers, JsonOptions);
-        var subscriptionsJson = JsonSerializer.Serialize(subscriptions, JsonOptions);
-        return SaveJsonPairWithBackupAsync(
-            ServersFile,
-            serversJson,
-            SubscriptionsFile,
-            subscriptionsJson);
     }
 
     private static async Task<T> LoadJsonWithBackupAsync<T>(string path, Func<T> fallback)
@@ -136,66 +118,6 @@ public class AppStore
         }
     }
 
-    private static async Task SaveJsonPairWithBackupAsync(
-        string firstPath,
-        string firstJson,
-        string secondPath,
-        string secondJson)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(firstPath)!);
-        Directory.CreateDirectory(Path.GetDirectoryName(secondPath)!);
-
-        await FileLock.WaitAsync().ConfigureAwait(false);
-        var transactionId = Guid.NewGuid().ToString("N");
-        var firstTemp = firstPath + "." + transactionId + ".tmp";
-        var secondTemp = secondPath + "." + transactionId + ".tmp";
-        var firstRollback = firstPath + "." + transactionId + ".rollback";
-        var secondRollback = secondPath + "." + transactionId + ".rollback";
-        var firstExisted = File.Exists(firstPath);
-        var secondExisted = File.Exists(secondPath);
-
-        try
-        {
-            await File.WriteAllTextAsync(firstTemp, firstJson).ConfigureAwait(false);
-            await File.WriteAllTextAsync(secondTemp, secondJson).ConfigureAwait(false);
-
-            if (firstExisted)
-            {
-                File.Copy(firstPath, firstRollback, overwrite: true);
-            }
-            if (secondExisted)
-            {
-                File.Copy(secondPath, secondRollback, overwrite: true);
-            }
-
-            File.Move(firstTemp, firstPath, overwrite: true);
-            File.Move(secondTemp, secondPath, overwrite: true);
-
-            if (firstExisted)
-            {
-                File.Copy(firstRollback, GetBackupPath(firstPath), overwrite: true);
-            }
-            if (secondExisted)
-            {
-                File.Copy(secondRollback, GetBackupPath(secondPath), overwrite: true);
-            }
-        }
-        catch
-        {
-            RestoreTransactionFile(firstPath, firstRollback, firstExisted);
-            RestoreTransactionFile(secondPath, secondRollback, secondExisted);
-            throw;
-        }
-        finally
-        {
-            TryDeleteFile(firstTemp);
-            TryDeleteFile(secondTemp);
-            TryDeleteFile(firstRollback);
-            TryDeleteFile(secondRollback);
-            FileLock.Release();
-        }
-    }
-
     private static bool TryReadJson<T>(string path, out T? value)
     {
         value = default;
@@ -246,21 +168,10 @@ public class AppStore
         }
     }
 
-    private static void RestoreTransactionFile(string path, string rollbackPath, bool existed)
+    private void DeleteLegacySubscriptionMetadata()
     {
-        try
-        {
-            if (existed && File.Exists(rollbackPath))
-            {
-                File.Copy(rollbackPath, path, overwrite: true);
-            }
-            else if (!existed && File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-        catch
-        {
-        }
+        var legacyPath = Path.Combine(_dataDir, "subscriptions.json");
+        TryDeleteFile(legacyPath);
+        TryDeleteFile(GetBackupPath(legacyPath));
     }
 }
