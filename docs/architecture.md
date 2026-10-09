@@ -21,7 +21,7 @@ Window interaction logic remains in code-behind. This is an incremental separati
 
 ## Storage policy
 
-The composition root reads the existing Velopack locator after `VelopackApp.Build().Run()`. A portable package uses `<RootAppDir>/data`; an installed or development build uses `%LocalAppData%/Orayo`. Portable data lives outside `current` so replacing application files does not replace configuration. No automatic migration from AppData is performed; both READMEs describe copying existing settings.
+The composition root reads the existing Velopack locator after `VelopackApp.Build().Run()`. A portable package uses `<RootAppDir>/data`; an installed or development build uses `%LocalAppData%/Orayo`. Portable data lives outside `current` so replacing application files does not replace configuration. No automatic migration from AppData is performed. To reuse settings from an older Portable release, exit Orayo and copy `servers.json`, `settings.json`, `runtime_state.json`, and their `.bak` files from `%LocalAppData%/Orayo` into the portable package root's `data` directory before launching it.
 
 `AppPaths` also supplies the normal-mode Xray configuration, crash log, pending-update directory, and update staging directory. Pending core updates reference their file within the selected data directory, so relocating a portable package does not invalidate its update manifest. The TUN helper keeps its session-specific configuration in the system temporary directory and deletes it on stop.
 
