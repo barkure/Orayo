@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Orayo;
+using Orayo.Infrastructure.Storage;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
@@ -13,15 +14,17 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace Orayo.Services;
 
-public static class CoreUpdateService
+public sealed class CoreUpdateService
 {
-    private static readonly string EngineDir = Path.Combine(AppContext.BaseDirectory, "Assets", "engine");
-    private static readonly string RulesDir = Path.Combine(AppContext.BaseDirectory, "Assets", "rules");
-    private static readonly string XrayExePath = Path.Combine(EngineDir, "xray.exe");
-    private static readonly string DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orayo");
-    private static readonly string VelopackPackagesDir = Path.Combine(DataDir, "packages");
-    private static readonly string PendingUpdateDir = Path.Combine(DataDir, "pending-update");
-    private static readonly string PendingUpdateManifestPath = Path.Combine(PendingUpdateDir, "pending-xray-update.json");
+    private readonly AppPaths _paths;
+    private string EngineDir => _paths.EngineDirectory;
+    private string RulesDir => _paths.RulesDirectory;
+    private string XrayExePath => Path.Combine(EngineDir, "xray.exe");
+    private string PendingUpdateDir => _paths.PendingUpdateDirectory;
+    private string PendingUpdateManifestPath => Path.Combine(PendingUpdateDir, "pending-xray-update.json");
+
+    public CoreUpdateService(AppPaths paths) => _paths = paths;
+
     private const string XrayWindows64Url = "https://github.com/XTLS/Xray-core/releases/latest/download/Xray-windows-64.zip";
     private const string GeoipUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat";
     private const string GeositeUrl = "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat";
@@ -43,7 +46,7 @@ public static class CoreUpdateService
         public DateTimeOffset CreatedAt { get; set; }
     }
 
-    public static async Task<XrayVersionInfo> GetXrayVersionInfoAsync()
+    public async Task<XrayVersionInfo> GetXrayVersionInfoAsync()
     {
         if (!File.Exists(XrayExePath))
         {
@@ -53,7 +56,7 @@ public static class CoreUpdateService
         return await ReadXrayVersionInfoAsync(XrayExePath);
     }
 
-    private static async Task<XrayVersionInfo> ReadXrayVersionInfoAsync(string exePath)
+    private async Task<XrayVersionInfo> ReadXrayVersionInfoAsync(string exePath)
     {
         using var process = Process.Start(new ProcessStartInfo
         {
@@ -130,10 +133,10 @@ public static class CoreUpdateService
         }
     }
 
-    public static async Task<StagedXrayCoreUpdate> StageXrayCoreUpdateAsync()
+    public async Task<StagedXrayCoreUpdate> StageXrayCoreUpdateAsync()
     {
         Directory.CreateDirectory(EngineDir);
-        var tempDir = Path.Combine(Path.GetTempPath(), "Orayo", "xray-core-" + Guid.NewGuid().ToString("N"));
+        var tempDir = Path.Combine(_paths.UpdateStagingDirectory, "xray-core-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
         var zipPath = Path.Combine(tempDir, "xray.zip");
 
@@ -166,26 +169,26 @@ public static class CoreUpdateService
         }
     }
 
-    public static void ApplyXrayCoreUpdate(StagedXrayCoreUpdate update)
+    public void ApplyXrayCoreUpdate(StagedXrayCoreUpdate update)
     {
         Directory.CreateDirectory(EngineDir);
         ReplaceFile(update.XrayExePath, XrayExePath);
     }
 
-    public static void StagePendingXrayCoreUpdate(StagedXrayCoreUpdate update)
+    public void StagePendingXrayCoreUpdate(StagedXrayCoreUpdate update)
     {
         Directory.CreateDirectory(PendingUpdateDir);
         var pendingXrayPath = Path.Combine(PendingUpdateDir, "xray.exe");
         ReplaceFile(update.XrayExePath, pendingXrayPath);
         var manifest = new PendingXrayUpdateManifest
         {
-            XrayExePath = pendingXrayPath,
+            XrayExePath = "xray.exe",
             CreatedAt = DateTimeOffset.Now
         };
         File.WriteAllText(PendingUpdateManifestPath, JsonSerializer.Serialize(manifest, JsonOptions));
     }
 
-    public static bool TryApplyPendingXrayCoreUpdate()
+    public bool TryApplyPendingXrayCoreUpdate()
     {
         try
         {
@@ -195,14 +198,15 @@ public static class CoreUpdateService
             }
 
             var manifest = JsonSerializer.Deserialize<PendingXrayUpdateManifest>(File.ReadAllText(PendingUpdateManifestPath), JsonOptions);
-            if (manifest is null || string.IsNullOrWhiteSpace(manifest.XrayExePath) || !File.Exists(manifest.XrayExePath))
+            var pendingXrayPath = Path.Combine(PendingUpdateDir, "xray.exe");
+            if (manifest is null || string.IsNullOrWhiteSpace(manifest.XrayExePath) || !File.Exists(pendingXrayPath))
             {
                 ClearPendingXrayCoreUpdate();
                 return false;
             }
 
             Directory.CreateDirectory(EngineDir);
-            ReplaceFile(manifest.XrayExePath, XrayExePath);
+            ReplaceFile(pendingXrayPath, XrayExePath);
             ClearPendingXrayCoreUpdate();
             return true;
         }
@@ -212,41 +216,10 @@ public static class CoreUpdateService
         }
     }
 
-    public static void CleanupVelopackPackages()
-    {
-        try
-        {
-            if (!Directory.Exists(VelopackPackagesDir))
-            {
-                return;
-            }
-
-            foreach (var file in Directory.GetFiles(VelopackPackagesDir))
-            {
-                var fileName = Path.GetFileName(file);
-                if (string.Equals(fileName, ".betaId", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(fileName, ".velopack_lock", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                TryDeleteFile(file);
-            }
-
-            foreach (var directory in Directory.GetDirectories(VelopackPackagesDir))
-            {
-                TryDeleteDirectory(directory);
-            }
-        }
-        catch
-        {
-        }
-    }
-
-    public static async Task<StagedGeofilesUpdate> StageGeofilesUpdateAsync()
+    public async Task<StagedGeofilesUpdate> StageGeofilesUpdateAsync()
     {
         Directory.CreateDirectory(RulesDir);
-        var tempDir = Path.Combine(Path.GetTempPath(), "Orayo", "geofiles-" + Guid.NewGuid().ToString("N"));
+        var tempDir = Path.Combine(_paths.UpdateStagingDirectory, "geofiles-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
         var stagedGeoip = Path.Combine(tempDir, "geoip.dat");
@@ -265,7 +238,7 @@ public static class CoreUpdateService
         }
     }
 
-    public static void ApplyGeofilesUpdate(StagedGeofilesUpdate update)
+    public void ApplyGeofilesUpdate(StagedGeofilesUpdate update)
     {
         Directory.CreateDirectory(RulesDir);
         var geoipPath = Path.Combine(RulesDir, "geoip.dat");
@@ -376,7 +349,7 @@ public static class CoreUpdateService
         }
     }
 
-    private static void ClearPendingXrayCoreUpdate()
+    private void ClearPendingXrayCoreUpdate()
     {
         TryDeleteFile(PendingUpdateManifestPath);
         TryDeleteDirectory(PendingUpdateDir);

@@ -1,9 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
-using System.Text.Json.Serialization;
 
 namespace Orayo.Models;
 
@@ -33,12 +30,6 @@ public class ServerEntry : INotifyPropertyChanged
     private string _flow = string.Empty;
     private string _vlessEncryption = string.Empty;
     private string _finalmask = string.Empty;
-    private bool _isActive;
-    private string _latencyBadgeText = string.Empty;
-    private Visibility _latencyBadgeVisibility = Visibility.Collapsed;
-    private Brush _latencyBadgeBackground = new SolidColorBrush(new Windows.UI.Color { A = 255, R = 0, G = 130, B = 53 });
-    private Brush _latencyBadgeForeground = new SolidColorBrush(new Windows.UI.Color { A = 255, R = 255, G = 255, B = 255 });
-
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public string Id
@@ -51,17 +42,7 @@ public class ServerEntry : INotifyPropertyChanged
     public string Host { get => _host; set => SetProperty(ref _host, value); }
     public int Port { get => _port; set => SetProperty(ref _port, value); }
 
-    public string Protocol
-    {
-        get => _protocol;
-        set
-        {
-            if (SetProperty(ref _protocol, value))
-            {
-                OnPropertyChanged(nameof(DisplayProtocol));
-            }
-        }
-    }
+    public string Protocol { get => _protocol; set => SetProperty(ref _protocol, value); }
 
     public string Encryption { get => _encryption; set => SetProperty(ref _encryption, value); }
     public string Username { get => _username; set => SetProperty(ref _username, value); }
@@ -82,59 +63,6 @@ public class ServerEntry : INotifyPropertyChanged
     public string Flow { get => _flow; set => SetProperty(ref _flow, value); }
     public string VlessEncryption { get => _vlessEncryption; set => SetProperty(ref _vlessEncryption, value); }
     public string Finalmask { get => _finalmask; set => SetProperty(ref _finalmask, value); }
-
-    public bool IsActive
-    {
-        get => _isActive;
-        set
-        {
-            if (SetProperty(ref _isActive, value))
-            {
-                OnPropertyChanged(nameof(ActiveVisibility));
-            }
-        }
-    }
-
-    [JsonIgnore]
-    public Visibility ActiveVisibility => IsActive ? Visibility.Visible : Visibility.Collapsed;
-
-    [JsonIgnore]
-    public string LatencyBadgeText
-    {
-        get => _latencyBadgeText;
-        set => SetProperty(ref _latencyBadgeText, value);
-    }
-
-    [JsonIgnore]
-    public Visibility LatencyBadgeVisibility
-    {
-        get => _latencyBadgeVisibility;
-        set => SetProperty(ref _latencyBadgeVisibility, value);
-    }
-
-    [JsonIgnore]
-    public Brush LatencyBadgeBackground
-    {
-        get => _latencyBadgeBackground;
-        set => SetProperty(ref _latencyBadgeBackground, value);
-    }
-
-    [JsonIgnore]
-    public Brush LatencyBadgeForeground
-    {
-        get => _latencyBadgeForeground;
-        set => SetProperty(ref _latencyBadgeForeground, value);
-    }
-
-    public string DisplayProtocol => Protocol.ToLowerInvariant() switch
-    {
-        "ss" => "Shadowsocks",
-        "vmess" => "VMess",
-        "vless" => "VLESS",
-        "hysteria2" => "Hysteria 2",
-        "trojan" => "Trojan",
-        _ => Protocol
-    };
 
     public ServerEntry Clone() => new()
     {
@@ -162,7 +90,6 @@ public class ServerEntry : INotifyPropertyChanged
         Flow = Flow,
         VlessEncryption = VlessEncryption,
         Finalmask = Finalmask,
-        IsActive = IsActive,
     };
 
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

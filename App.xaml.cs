@@ -6,19 +6,19 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Forms = System.Windows.Forms;
-using Orayo.Models;
+using Orayo.Application;
 using Orayo.Services;
 using Velopack;
 
 namespace Orayo;
 
-public partial class App : Application
+public partial class App : Microsoft.UI.Xaml.Application
 {
     private const string SingleInstanceMutexName = @"Local\Orayo.SingleInstance";
     private const string ShowWindowEventName = @"Local\Orayo.ShowWindow";
     private static Mutex? _singleInstanceMutex;
     private static EventWaitHandle? _showWindowEvent;
-    private readonly RuntimeService _runtime = new();
+    private AppServices? _services;
     private readonly TunHelperLaunchOptions? _tunHelperOptions;
     private MainWindow? _window;
     private Forms.NotifyIcon? _trayIcon;
@@ -52,18 +52,19 @@ public partial class App : Application
             return;
         }
 
+        _services = AppServices.Create();
         InitializeComponent();
         UnhandledException += App_UnhandledException;
     }
 
-    private static void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         try
         {
-            var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orayo");
-            Directory.CreateDirectory(logDir);
+            if (_services is null) return;
+            Directory.CreateDirectory(_services.Paths.DataDirectory);
             File.AppendAllText(
-                Path.Combine(logDir, "crash.log"),
+                _services.Paths.CrashLogFile,
                 $"[{DateTimeOffset.Now:O}] {e.Exception}\r\n\r\n");
         }
         catch
@@ -81,11 +82,10 @@ public partial class App : Application
             return;
         }
 
-        CoreUpdateService.TryApplyPendingXrayCoreUpdate();
-        CoreUpdateService.CleanupVelopackPackages();
-
-        var store = new AppStore();
-        var settings = store.LoadSettingsAsync().GetAwaiter().GetResult();
+        var services = _services ?? throw new InvalidOperationException("Application services have not been initialized.");
+        services.CoreUpdates.TryApplyPendingXrayCoreUpdate();
+        services.Session.LoadAsync().GetAwaiter().GetResult();
+        var settings = services.Session.Settings;
         if (!string.IsNullOrEmpty(settings.Language))
         {
             try
@@ -97,7 +97,8 @@ public partial class App : Application
             }
         }
 
-        var window = new MainWindow(_runtime);
+        services.Session.NormalizeSettings();
+        var window = new MainWindow(services);
 
         _window = window;
         InitializeTrayIcon();
@@ -252,7 +253,8 @@ public partial class App : Application
 
     private async Task CleanupOnExitAsync(bool fastShutdown = false)
     {
-        await _runtime.StopForShutdownAsync();
+        if (_services is not null)
+            await _services.Runtime.StopForShutdownAsync();
     }
 
     private static void ReleaseSingleInstance()

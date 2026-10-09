@@ -46,6 +46,9 @@ jobs:
             }
           }
 
+      - name: Test core behavior
+        run: dotnet test tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj -c Release
+
       - name: Restore
         run: dotnet restore Orayo.csproj -r $env:RUNTIME_ID
 

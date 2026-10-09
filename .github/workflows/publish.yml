@@ -60,6 +60,9 @@ jobs:
       - name: Restore
         run: dotnet restore Orayo.csproj -r $env:RUNTIME_ID
 
+      - name: Test core behavior
+        run: dotnet test tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj -c Release
+
       - name: Verify bundled runtime assets
         shell: pwsh
         run: |

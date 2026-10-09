@@ -12,15 +12,14 @@ using Orayo;
 using Orayo.Helpers;
 using Orayo.Services;
 using Orayo.Models;
+using Orayo.Application;
 using Velopack;
-using Velopack.Sources;
 
 namespace Orayo.Views;
 
 public sealed partial class MoreWindow : Window
 {
     private const int GWL_HWNDPARENT = -8;
-    private const string UpdateRepositoryUrl = "https://github.com/barkure/Orayo";
     private const string LoopbackUtilityRelativePath = "Assets\\tools\\enableloopbackutility.exe";
     private const int DefaultWidth = 900;
     private const int DefaultHeight = 980;
@@ -33,18 +32,23 @@ public sealed partial class MoreWindow : Window
 
     private readonly Window _owner;
     private readonly Func<Task> _prepareCoreUpdateAsync;
-    private readonly AppStore _store = new();
+    private readonly AppSession _session;
+    private readonly CoreUpdateService _coreUpdates;
+    private readonly AppUpdateService _appUpdates;
     private readonly AppSettings _settings;
     private bool _isInitializing;
 
     public MoreWindow(
         Window owner,
-        AppSettings settings,
+        AppServices services,
         Func<Task> prepareCoreUpdateAsync)
     {
         _owner = owner;
         _prepareCoreUpdateAsync = prepareCoreUpdateAsync;
-        _settings = settings;
+        _session = services.Session;
+        _settings = _session.Settings;
+        _coreUpdates = services.CoreUpdates;
+        _appUpdates = services.AppUpdates;
         InitializeComponent();
         WindowThemeHelper.Apply(this);
 
@@ -90,7 +94,7 @@ public sealed partial class MoreWindow : Window
 
     private async Task RefreshVersionAsync()
     {
-        var info = await CoreUpdateService.GetXrayVersionInfoAsync();
+        var info = await _coreUpdates.GetXrayVersionInfoAsync();
         VersionTextBlock.Text = info.Version;
 
         if (string.IsNullOrWhiteSpace(info.Commit) || string.IsNullOrWhiteSpace(info.ReleaseUrl))
@@ -110,9 +114,9 @@ public sealed partial class MoreWindow : Window
     {
         await RunActionAsync(Strings.StatusDownloadingXray, async () =>
         {
-            using var update = await CoreUpdateService.StageXrayCoreUpdateAsync();
+            using var update = await _coreUpdates.StageXrayCoreUpdateAsync();
             StatusTextBlock.Text = Strings.StatusXrayDownloaded;
-            CoreUpdateService.StagePendingXrayCoreUpdate(update);
+            _coreUpdates.StagePendingXrayCoreUpdate(update);
             await RefreshVersionAsync();
         }, Strings.StatusXrayApplied);
     }
@@ -121,9 +125,9 @@ public sealed partial class MoreWindow : Window
     {
         await RunActionAsync(Strings.StatusUpdatingGeo, async () =>
         {
-            using var update = await CoreUpdateService.StageGeofilesUpdateAsync();
+            using var update = await _coreUpdates.StageGeofilesUpdateAsync();
             StatusTextBlock.Text = Strings.StatusGeoDownloaded;
-            CoreUpdateService.ApplyGeofilesUpdate(update);
+            _coreUpdates.ApplyGeofilesUpdate(update);
         }, Strings.StatusGeoApplied);
     }
 
@@ -167,7 +171,7 @@ public sealed partial class MoreWindow : Window
 
             StatusTextBlock.Text = Strings.StatusUpdateDownloaded;
             await _prepareCoreUpdateAsync();
-            if (Application.Current is App app)
+            if (Microsoft.UI.Xaml.Application.Current is App app)
             {
                 await app.PrepareForRestartAsync();
             }
@@ -255,7 +259,7 @@ public sealed partial class MoreWindow : Window
             return;
         }
 
-        await _store.SaveSettingsAsync(_settings);
+        await _session.SaveSettingsAsync();
     }
 
     private void UpdateAutoStartButtonText()
@@ -265,14 +269,7 @@ public sealed partial class MoreWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
-    private UpdateManager CreateUpdateManager()
-    {
-        var downloader = new OrayoUpdateFileDownloader(
-            _settings.IsSystemProxyEnabled && !_settings.IsTunMode,
-            _settings.LocalHttpPort);
-        var source = new GithubSource(UpdateRepositoryUrl, string.Empty, false, downloader);
-        return new UpdateManager(source);
-    }
+    private UpdateManager CreateUpdateManager() => _appUpdates.CreateManager(_settings);
 
     private static string ThisAssemblyVersion()
     {
@@ -381,9 +378,9 @@ public sealed partial class MoreWindow : Window
         }
 
         _settings.Language = newLang;
-        await _store.SaveSettingsAsync(_settings);
+        await _session.SaveSettingsAsync();
 
-        if (Application.Current is App app)
+        if (Microsoft.UI.Xaml.Application.Current is App app)
         {
             await app.PrepareForRestartAsync();
         }

@@ -4,6 +4,10 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Project Path="Orayo.Core/Orayo.Core.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj" />
+  </Folder>
   <Project Path="Orayo.csproj">
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />

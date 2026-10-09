@@ -17,3 +17,6 @@ BundleArtifacts/
 artifacts/
 *.cache
 *.log
+
+# Portable user data (contains node credentials)
+data/
