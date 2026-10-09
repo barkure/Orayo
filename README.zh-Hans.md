@@ -46,7 +46,7 @@ winget install barkure.Orayo
 
 ## 构建
 
-需要 .NET 8 SDK 及 Windows 10 1809 或更高版本。推荐 Windows 10 2004 及以上。
+需要 .NET 10 SDK 及 Windows 10 1809 或更高版本。推荐 Windows 10 2004 及以上。
 
 ```bash
 dotnet build -c Release

@@ -193,7 +193,7 @@ public class XrayService
 
     public async Task<bool> StartAsync(string configJson)
     {
-        if (IsRunning)
+        if (_process is not null)
         {
             await StopCoreAsync();
         }
@@ -424,7 +424,7 @@ public class XrayService
         var port = TryGetLocalInboundPort(configJson);
         if (port is null)
         {
-            return true;
+            return false;
         }
 
         var deadline = Environment.TickCount64 + 5000;
