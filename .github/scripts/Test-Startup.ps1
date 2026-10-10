@@ -17,7 +17,7 @@ public static class StartupWindows {
         IntPtr found = IntPtr.Zero;
         EnumWindows((window, state) => {
             uint owner; GetWindowThreadProcessId(window, out owner);
-            if (owner == process && Title(window).Length > 0) { found = window; return false; }
+            if (owner == process && Title(window) == "Orayo") { found = window; return false; }
             return true;
         }, IntPtr.Zero);
         return found;
@@ -73,6 +73,9 @@ if ($ready.ExitCode -ne 0) { throw "Dependencies still unavailable: $($ready.Exi
 $ui = Start-Process "$root/Orayo.App.exe" -PassThru -WindowStyle Hidden
 try {
     $window = Wait-Window $ui
+    Start-Sleep -Seconds 2
+    $ui.Refresh()
+    if ($ui.HasExited) { throw "WinUI exited after creating its window: $($ui.ExitCode)" }
     Write-Output "WinUI startup created a window: $([StartupWindows]::Title($window))"
 } finally {
     if (-not $ui.HasExited) { $ui.Kill() }
