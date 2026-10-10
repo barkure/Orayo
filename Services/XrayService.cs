@@ -91,11 +91,9 @@ public class XrayService
     public event EventHandler<string>? LogReceived;
     public event EventHandler<bool>? RunningChanged;
 
-    public XrayService(string? configPath = null, bool deleteConfigOnStop = false)
+    public XrayService(string configPath, bool deleteConfigOnStop = false)
     {
-        _configPath = configPath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Orayo", "xray_config.json");
+        _configPath = Path.GetFullPath(configPath);
         _deleteConfigOnStop = deleteConfigOnStop;
     }
 

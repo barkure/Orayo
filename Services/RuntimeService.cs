@@ -3,13 +3,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Orayo;
 using Orayo.Models;
+using Orayo.Infrastructure.Storage;
 
 namespace Orayo.Services;
 
 public sealed class RuntimeService
 {
-    private readonly XrayService _localXray = new();
-    private readonly TunService _tunService = new();
+    private readonly XrayService _localXray;
+    private readonly TunService _tunService;
     private readonly TunHelperClient _tunHelper = new();
     private ServerEntry? _activeServer;
     private bool _isRunning;
@@ -19,8 +20,10 @@ public sealed class RuntimeService
     private CancellationTokenSource? _tunMonitorCts;
     private Task? _tunMonitorTask;
 
-    public RuntimeService()
+    public RuntimeService(AppPaths paths)
     {
+        _localXray = new XrayService(paths.XrayConfigFile);
+        _tunService = new TunService(paths.EngineDirectory);
         _localXray.RunningChanged += OnLocalXrayRunningChanged;
     }
 

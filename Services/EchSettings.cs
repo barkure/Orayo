@@ -1,6 +1,6 @@
 namespace Orayo.Services;
 
-internal static class EchSettings
+public static class EchSettings
 {
     public const string Half = "half";
     public const string Full = "full";

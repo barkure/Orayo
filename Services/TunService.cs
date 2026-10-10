@@ -1,11 +1,12 @@
-using System;
 using System.IO;
 
 namespace Orayo.Services;
 
 public sealed class TunService
 {
-    private readonly string _engineDirectory = Path.Combine(AppContext.BaseDirectory, "Assets", "engine");
+    private readonly string _engineDirectory;
+
+    public TunService(string engineDirectory) => _engineDirectory = engineDirectory;
 
     public bool IsWintunAvailable()
     {

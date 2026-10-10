@@ -7,6 +7,8 @@ using Orayo.Helpers;
 using Orayo.Models;
 using Orayo.Services;
 using Orayo.Views;
+using Orayo.Application;
+using Orayo.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,7 +16,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
@@ -25,12 +26,13 @@ namespace Orayo;
 
 public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
-    private readonly AppStore _store = new();
+    private readonly AppServices _services;
+    private readonly AppSession _session;
     private readonly RuntimeService _runtime;
     private readonly ServerLatencyService _serverLatencyService = new();
-    private AppSettings _settings = new();
-    private AppRuntimeState _runtimeState = new();
-    private ServerEntry? _selectedServer;
+    private readonly AppSettings _settings;
+    private readonly AppRuntimeState _runtimeState;
+    private ServerItemViewModel? _selectedServer;
     private ServerEntry? _activeServer;
     private bool _isRunning;
     private bool _isInitializing;
@@ -44,19 +46,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private string _routingModeText = Strings.RoutingRuleMode;
     private CancellationTokenSource? _latencyRefreshCts;
 
-    private static readonly Brush LatencyDeepGreenBrush = CreateBrush(0x00, 0x82, 0x35);
-    private static readonly Brush LatencyLightGreenBrush = CreateBrush(0x7c, 0xcf, 0x00);
-    private static readonly Brush LatencyYellowBrush = CreateBrush(0xfd, 0xc7, 0x00);
-    private static readonly Brush LatencyOrangeBrush = CreateBrush(0xff, 0x69, 0x00);
-    private static readonly Brush LatencyRedBrush = CreateBrush(0xd9, 0x2d, 0x20);
-    private static readonly Brush LatencyWhiteForegroundBrush = CreateBrush(0xff, 0xff, 0xff);
-    private static readonly Brush LatencyDarkForegroundBrush = CreateBrush(0x1f, 0x29, 0x37);
-
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public ObservableCollection<ServerEntry> Servers { get; } = [];
+    public ObservableCollection<ServerItemViewModel> Servers { get; } = [];
 
-    public ServerEntry? SelectedServer
+    public ServerItemViewModel? SelectedServer
     {
         get => _selectedServer;
         set
@@ -150,9 +144,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    public MainWindow(RuntimeService runtime)
+    public MainWindow(AppServices services)
     {
-        _runtime = runtime;
+        _services = services;
+        _session = services.Session;
+        _settings = _session.Settings;
+        _runtimeState = _session.RuntimeState;
+        _runtime = services.Runtime;
         InitializeComponent();
         WindowThemeHelper.Apply(this);
         AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
@@ -210,16 +208,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private async Task InitializeAsync()
     {
         _isInitializing = true;
-        _settings = await _store.LoadSettingsAsync();
-        _runtimeState = await _store.LoadRuntimeStateAsync();
-        _settings.RoutingRuleJson = RouteRulePresetService.EnsureRoutingJson(_settings.RoutingRuleJson);
-        _settings.DnsJson = DnsPresetService.EnsureDnsJson(_settings.DnsJson);
-        EnsureDefaultLocalPorts();
-
-        foreach (var server in await _store.LoadServersAsync())
+        foreach (var server in _session.Catalog.Servers)
         {
-            server.IsActive = false;
-            Servers.Add(server);
+            Servers.Add(new ServerItemViewModel(server));
         }
 
         _isTunInternalUpdate = true;
@@ -256,38 +247,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         ScheduleLatencyRefresh();
     }
 
-    private void EnsureDefaultLocalPorts()
+    private ServerItemViewModel? ResolveInitialSelection()
     {
-        if (_settings.LocalSocksPort <= 0)
-        {
-            _settings.LocalSocksPort = 10808;
-        }
-
-        if (_settings.LocalHttpPort <= 0)
-        {
-            _settings.LocalHttpPort = 10809;
-        }
-
-
-    }
-
-    private ServerEntry? ResolveInitialSelection()
-    {
-        if (Servers.Count == 0)
-        {
-            return null;
-        }
-
-        if (!string.IsNullOrWhiteSpace(_runtimeState.LastSelectedServerId))
-        {
-            var matched = Servers.FirstOrDefault(x => x.Id == _runtimeState.LastSelectedServerId);
-            if (matched is not null)
-            {
-                return matched;
-            }
-        }
-
-        return Servers[0];
+        var selected = _session.Catalog.ResolveSelection(_runtimeState.LastSelectedServerId);
+        return Servers.FirstOrDefault(x => ReferenceEquals(x.Server, selected));
     }
 
     private void ScheduleLatencyRefresh()
@@ -327,7 +290,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 await gate.WaitAsync(cancellationToken);
                 try
                 {
-                    return (server, await _serverLatencyService.ProbeAsync(server, cancellationToken));
+                    return (server, await _serverLatencyService.ProbeAsync(server.Server, cancellationToken));
                 }
                 finally
                 {
@@ -339,7 +302,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             foreach (var (server, result) in results)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                ApplyLatencyResult(server, result);
+                server.ApplyLatencyResult(result);
             }
         }
         finally
@@ -347,51 +310,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _isLatencyRefreshing = false;
             OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
         }
-    }
-
-    private static void ApplyLatencyResult(ServerEntry server, LatencyProbeResult result)
-    {
-        if (result.TimedOut || result.Milliseconds is null)
-        {
-            server.LatencyBadgeText = Strings.LatencyTimeout;
-            server.LatencyBadgeBackground = LatencyRedBrush;
-            server.LatencyBadgeForeground = LatencyWhiteForegroundBrush;
-            server.LatencyBadgeVisibility = Visibility.Visible;
-            return;
-        }
-
-        var milliseconds = Math.Max(0, result.Milliseconds.Value);
-        server.LatencyBadgeText = $"{milliseconds}ms";
-        server.LatencyBadgeVisibility = Visibility.Visible;
-
-        if (milliseconds <= 50)
-        {
-            server.LatencyBadgeBackground = LatencyDeepGreenBrush;
-            server.LatencyBadgeForeground = LatencyWhiteForegroundBrush;
-            return;
-        }
-
-        if (milliseconds <= 150)
-        {
-            server.LatencyBadgeBackground = LatencyLightGreenBrush;
-            server.LatencyBadgeForeground = LatencyDarkForegroundBrush;
-            return;
-        }
-
-        if (milliseconds <= 250)
-        {
-            server.LatencyBadgeBackground = LatencyYellowBrush;
-            server.LatencyBadgeForeground = LatencyDarkForegroundBrush;
-            return;
-        }
-
-        server.LatencyBadgeBackground = LatencyOrangeBrush;
-        server.LatencyBadgeForeground = LatencyWhiteForegroundBrush;
-    }
-
-    private static Brush CreateBrush(byte r, byte g, byte b)
-    {
-        return new SolidColorBrush(new Windows.UI.Color { A = 255, R = r, G = g, B = b });
     }
 
     private async void LatencyRefreshButton_Click(object sender, RoutedEventArgs e)
@@ -424,7 +342,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         try
         {
-            await ConnectServerAsync(SelectedServer);
+            await ConnectServerAsync(SelectedServer.Server);
         }
         finally
         {
@@ -693,7 +611,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void MoreButton_Click(object sender, RoutedEventArgs e)
     {
-        var window = new MoreWindow(this, _settings, PrepareForCoreUpdateAsync);
+        var window = new MoreWindow(this, _services, PrepareForCoreUpdateAsync);
         window.AppWindow.Show();
         window.Activate();
     }
@@ -756,33 +674,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var count = 0;
-        ServerEntry? firstImported = null;
-        foreach (var token in Regex.Split(text, @"\s+"))
-        {
-            var trimmed = token.Trim();
-            if (string.IsNullOrWhiteSpace(trimmed))
-            {
-                continue;
-            }
+        var imported = await _session.Catalog.ImportAsync(text);
+        var items = imported.Select(server => new ServerItemViewModel(server)).ToList();
+        foreach (var item in items) Servers.Add(item);
 
-            var server = NodeLinkParser.Parse(trimmed);
-            if (server is null)
-            {
-                continue;
-            }
-
-            if (Servers.Any(x => x.Protocol == server.Protocol && x.Host == server.Host && x.Port == server.Port && x.Name == server.Name))
-            {
-                continue;
-            }
-
-            Servers.Add(server);
-            firstImported ??= server;
-            count++;
-        }
-
-        if (count == 0)
+        if (items.Count == 0)
         {
             await ShowMessageAsync(Strings.MsgImportDone, Strings.MsgNoNewNodes);
             return;
@@ -790,10 +686,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         if (SelectedServer is null)
         {
-            SelectedServer = firstImported;
+            SelectedServer = items[0];
         }
 
-        await _store.SaveServersAsync(Servers);
         OnPropertyChanged(nameof(IsEmptyHintVisible));
         OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
         ScheduleLatencyRefresh();
@@ -808,9 +703,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        Servers.Add(server);
-        SelectedServer = server;
-        await _store.SaveServersAsync(Servers);
+        await _session.Catalog.AddAsync(server);
+        var item = new ServerItemViewModel(server);
+        Servers.Add(item);
+        SelectedServer = item;
         OnPropertyChanged(nameof(IsEmptyHintVisible));
         OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
         ScheduleLatencyRefresh();
@@ -819,12 +715,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void EditServerMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement element || element.DataContext is not ServerEntry server)
+        if (sender is not FrameworkElement element || element.DataContext is not ServerItemViewModel server)
         {
             return;
         }
 
-        var window = new ServerEditorWindow(this, server, Strings.TitleEditServer, Strings.ButtonSave);
+        var window = new ServerEditorWindow(this, server.Server, Strings.TitleEditServer, Strings.ButtonSave);
         var replacement = await window.ShowModalAsync();
         if (replacement is null)
         {
@@ -837,21 +733,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        Servers[index] = replacement;
+        if (!await _session.Catalog.ReplaceAsync(server.Server, replacement)) return;
+        var replacementItem = new ServerItemViewModel(replacement);
+        Servers[index] = replacementItem;
 
-        if (ReferenceEquals(SelectedServer, server) || ReferenceEquals(_activeServer, server))
+        if (ReferenceEquals(SelectedServer, server) || ReferenceEquals(_activeServer, server.Server))
         {
-            SelectedServer = replacement;
+            SelectedServer = replacementItem;
             await EnsureSelectedServerAppliedAsync(forceRestart: true);
         }
 
-        await _store.SaveServersAsync(Servers);
         ScheduleLatencyRefresh();
     }
 
     private async void DeleteServerMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement element || element.DataContext is not ServerEntry server)
+        if (sender is not FrameworkElement element || element.DataContext is not ServerItemViewModel server)
         {
             return;
         }
@@ -861,7 +758,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var wasActive = ReferenceEquals(_activeServer, server);
+        var wasActive = ReferenceEquals(_activeServer, server.Server);
         if (wasActive)
         {
             await ShowMessageAsync(Strings.ErrCannotDelete, Strings.ErrCannotDeleteActive);
@@ -870,6 +767,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         var index = Servers.IndexOf(server);
         var wasSelected = ReferenceEquals(SelectedServer, server);
+        if (!await _session.Catalog.RemoveAsync(server.Server)) return;
         Servers.Remove(server);
 
         if (Servers.Count == 0)
@@ -889,7 +787,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             MarkStateDirty();
         }
 
-        await _store.SaveServersAsync(Servers);
         OnPropertyChanged(nameof(IsEmptyHintVisible));
         OnPropertyChanged(nameof(IsLatencyRefreshEnabled));
         ScheduleLatencyRefresh();
@@ -897,12 +794,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void ShareServerMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement element || element.DataContext is not ServerEntry server)
+        if (sender is not FrameworkElement element || element.DataContext is not ServerItemViewModel server)
         {
             return;
         }
 
-        var link = NodeLinkSerializer.ToLink(server);
+        var link = NodeLinkSerializer.ToLink(server.Server);
         if (string.IsNullOrWhiteSpace(link))
         {
             await ShowMessageAsync(Strings.ErrCannotShare, Strings.ErrCannotShareProtocol);
@@ -936,16 +833,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SetActiveServer(ServerEntry? server)
     {
+        _activeServer = server;
         foreach (var entry in Servers)
         {
-            entry.IsActive = false;
-        }
-
-        _activeServer = server;
-
-        if (_activeServer is not null)
-        {
-            _activeServer.IsActive = true;
+            entry.IsActive = ReferenceEquals(entry.Server, server);
         }
 
         OnPropertyChanged(nameof(StatusText));
@@ -971,7 +862,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         try
         {
-            await _store.SaveSettingsAsync(_settings);
+            await _session.SaveSettingsAsync();
         }
         catch
         {
@@ -982,7 +873,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         try
         {
-            await _store.SaveRuntimeStateAsync(_runtimeState);
+            await _session.SaveRuntimeStateAsync();
         }
         catch
         {
