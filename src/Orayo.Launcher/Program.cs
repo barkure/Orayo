@@ -51,6 +51,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
+            if (args.Length == 1 && args[0] == "--check-runtime") return 4;
             NativeDialog.Error(Chinese ? "无法启动 Orayo" : "Unable to start Orayo", ex.Message);
             return 1;
         }

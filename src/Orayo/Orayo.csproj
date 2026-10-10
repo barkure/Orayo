@@ -7,7 +7,6 @@
     <AssemblyName>Orayo.App</AssemblyName>
     <SelfContained>false</SelfContained>
     <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
-    <RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion>
     <Product>Orayo</Product>
     <Title>Orayo</Title>
     <Description>Orayo</Description>
@@ -27,7 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" RuntimeFrameworkVersion="10.0.12" />
+    <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="10.0.12" />
   </ItemGroup>
 
   <ItemGroup>
