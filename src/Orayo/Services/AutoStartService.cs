@@ -25,7 +25,7 @@ public static class AutoStartService
                 return true;
             }
 
-            var exePath = Environment.ProcessPath ?? string.Empty;
+            var exePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Orayo.exe");
             if (string.IsNullOrWhiteSpace(exePath))
             {
                 return false;

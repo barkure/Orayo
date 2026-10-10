@@ -53,4 +53,18 @@ jobs:
         run: dotnet restore src/Orayo/Orayo.csproj -r $env:RUNTIME_ID
 
       - name: Build
-        run: dotnet build src/Orayo/Orayo.csproj -c Release -r $env:RUNTIME_ID --no-restore -p:WindowsAppSDKSelfContained=true
+        run: dotnet build src/Orayo/Orayo.csproj -c Release -r $env:RUNTIME_ID --no-restore -p:WindowsAppSDKSelfContained=false
+
+      - name: Verify framework-dependent publishing and native launcher
+        shell: pwsh
+        run: ./.github/scripts/Publish-App.ps1 -Runtime $env:RUNTIME_ID
+
+      - name: Upload preview package
+        uses: actions/upload-artifact@v7
+        with:
+          name: Orayo-preview-win-x64
+          path: artifacts/publish/
+
+      - name: Verify dependency prompt and WinUI startup
+        shell: pwsh
+        run: ./.github/scripts/Test-Startup.ps1

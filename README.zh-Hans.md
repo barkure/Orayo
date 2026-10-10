@@ -46,10 +46,18 @@ winget install barkure.Orayo
 
 ## 构建
 
+框架依赖版本需要 .NET 10 Desktop Runtime 和 Windows App Runtime 2.0；缺少时启动器会提供对应架构的微软官方下载入口，安装完成后点击“重新检测”。
+
 需要 .NET 10 SDK 及 Windows 10 1809 或更高版本。推荐 Windows 10 2004 及以上。
 
 ```bash
 dotnet build src/Orayo/Orayo.csproj -c Release -r win-x64
+```
+
+发布包含原生启动器的完整应用目录，需要 Visual Studio C++ 构建工具：
+
+```powershell
+./.github/scripts/Publish-App.ps1
 ```
 
 ## 使用的开源项目

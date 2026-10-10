@@ -8,6 +8,7 @@ Orayo has a Windows desktop application and a platform-independent `Orayo.Core` 
 src/
   Orayo/                 WinUI application, Windows services, bundled assets
   Orayo.Core/            Models, application logic, storage, protocols, resources
+  Orayo.Launcher/        NativeAOT entry point and runtime installation prompt
 tests/
   Orayo.Core.Tests/      Core behavior tests
 docs/                    Architecture and documentation assets
@@ -16,6 +17,12 @@ Orayo.slnx               Solution entry point
 ```
 
 Build the Windows application from the repository root with `dotnet build src/Orayo/Orayo.csproj -c Release -r win-x64`. Runtime assets still deploy to `Assets/` beside the executable; relocating source files does not change configuration or portable data locations. Generated output belongs in ignored `bin/`, `obj/`, and `artifacts/` directories.
+
+The release is framework-dependent. `Orayo.exe` is a small C# NativeAOT launcher that runs without a separately installed .NET runtime or Windows App Runtime. It checks the app's architecture and requires .NET 10.0.12 or a later 10.0 patch (both core and desktop frameworks), plus the stable Windows App Runtime 2.0 family via the shipped native bootstrapper. Missing dependencies are shown in a native Windows dialog with official Microsoft download buttons, a retry button, and cancel. Downloading opens the browser; no installer is run automatically. Once both checks pass, the launcher forwards arguments to `Orayo.App.exe`.
+
+Publish both projects with `./.github/scripts/Publish-App.ps1` from a Windows PowerShell session with .NET 10 SDK and Visual Studio C++ build tools installed. The UI keeps its managed Windows API projections but does not bundle the shared .NET or Windows App Runtime. The launcher is the Velopack package entry point; its `--veloapp-*` handling acknowledges probes and lifecycle events because no install/update hooks are registered. The managed app still runs Velopack startup and owns update operations. TUN elevation launches `Orayo.App.exe` directly so helper and parent executable identity checks remain valid. Autostart points to the launcher.
+
+`--check-runtime` is a noninteractive launcher probe: exit 0 means ready, 1 means .NET missing, 2 means Windows App Runtime missing, and 3 means both missing. The build workflow publishes the actual NativeAOT launcher, runs this probe, and rejects unexpected bundled runtime binaries. The current release workflow targets x64; additional package architectures need their own NativeAOT toolchain validation.
 
 ## Responsibilities
 
@@ -42,6 +49,10 @@ The composition root reads the existing Velopack locator after `VelopackApp.Buil
 `AppPaths` also supplies the normal-mode Xray configuration, crash log, pending-update directory, and update staging directory. Pending core updates reference their file within the selected data directory, so relocating a portable package does not invalidate its update manifest. The TUN helper keeps its session-specific configuration in the system temporary directory and deletes it on stop.
 
 Velopack owns application update packages and their cache lifetime; the Xray updater does not delete that cache. Core and Geo update files are managed by `CoreUpdateService`, while `AppUpdateService` creates the application update manager and its proxy-aware downloader.
+
+The release workflow downloads the latest published Windows full package before packing, then creates both full and delta packages. Before uploading, it applies the delta to the downloaded base and compares every reconstructed file with the new full package using SHA-256. Download or verification failures stop publication. The GitHub upload publishes the newly built assets; the downloaded base remains in its original release.
+
+The existing Velopack client selects available delta updates and falls back to the full package when a suitable delta cannot be used. Keep the installed full-package cache as the base for reconstruction. Delta updates reduce download size, not the installed runtime size; Setup and Portable remain complete packages.
 
 `JsonFileStore` coordinates file operations through the shared store instance, writes a temporary file before replacing the primary, and preserves the previous valid document as `.bak`. A corrupt primary cannot overwrite a valid backup. Subscription metadata is neither read nor deleted.
 
