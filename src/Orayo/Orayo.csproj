@@ -81,6 +81,16 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
   </PropertyGroup>
 
+  <!-- Windows ML suppresses copy-local in framework mode, but publish resolves native
+       assets independently. Orayo uses no ML APIs; these DLLs belong to the shared runtime. -->
+  <Target Name="ExcludeUnusedWindowsMLPublishAssets" AfterTargets="ComputeResolvedFilesToPublish"
+          Condition="'$(WindowsAppSDKSelfContained)' != 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+          Condition="'%(ResolvedFileToPublish.Filename)' == 'onnxruntime' or '%(ResolvedFileToPublish.Filename)' == 'DirectML' or '%(ResolvedFileToPublish.Filename)' == 'Microsoft.Windows.AI.MachineLearning'" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="CopyWinUIXamlResourcesToPublishDirectory" AfterTargets="Publish">
     <ItemGroup>
       <WinUIXamlPublishResources Include="$(OutputPath)**\*.xbf;$(OutputPath)**\*.pri" />
