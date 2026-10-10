@@ -34,9 +34,7 @@ internal static class NativeDialog
     public static int Show(bool chinese, string architecture, bool dotnet, bool windows)
     {
         var buttons = new List<(int Id, string Text)>();
-        if (dotnet) buttons.Add((100, chinese ? "下载 .NET 运行库" : "Download .NET Runtime"));
-        if (windows) buttons.Add((101, chinese ? "下载 Windows App Runtime" : "Download Windows App Runtime"));
-        buttons.Add((102, chinese ? "重新检测" : "Check again"));
+        buttons.Add((100, chinese ? "下载所需运行库" : "Download required runtimes"));
         var texts = new List<nint>();
         var size = Marshal.SizeOf<Button>();
         var memory = Marshal.AllocCoTaskMem(size * buttons.Count);
@@ -56,9 +54,9 @@ internal static class NativeDialog
                 Size = (uint)Marshal.SizeOf<Config>(), Flags = 8, CommonButtons = 8,
                 Title = "Orayo", Instruction = chinese ? "需要安装运行库" : "Runtime installation required",
                 Content = string.Join("\n", missing) + "\n\n" + (chinese
-                    ? "点击下载按钮打开微软官方安装入口。安装完成后点击“重新检测”，即可启动 Orayo。"
-                    : "Download the missing runtimes from Microsoft. After installing, select Check again to start Orayo."),
-                ButtonCount = (uint)buttons.Count, Buttons = memory, DefaultButton = 102
+                    ? "请安装以上运行库后重新启动 Orayo。"
+                    : "Install the runtimes above, then start Orayo again."),
+                ButtonCount = (uint)buttons.Count, Buttons = memory, DefaultButton = 2
             };
             var result = TaskDialogIndirect(ref config, out var selected, out _, out _);
             Marshal.ThrowExceptionForHR(result);

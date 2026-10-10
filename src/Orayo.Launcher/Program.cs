@@ -26,21 +26,21 @@ internal static class Program
             var architecture = RuntimeRequirements.ArchitectureName(RuntimeInformation.ProcessArchitecture);
             var appPath = Path.Combine(AppContext.BaseDirectory, "Orayo.App.exe");
             if (!File.Exists(appPath)) throw new FileNotFoundException("Orayo.App.exe is missing.");
-            while (true)
+            var missingDotnet = !HasDotnet(architecture);
+            var missingWindows = !HasWindowsRuntime();
+            if (args.Length == 1 && args[0] == "--check-runtime")
+                return (missingDotnet ? 1 : 0) | (missingWindows ? 2 : 0);
+            if (missingDotnet || missingWindows)
             {
-                var missingDotnet = !HasDotnet(architecture);
-                var missingWindows = !HasWindowsRuntime();
-                if (args.Length == 1 && args[0] == "--check-runtime")
-                    return (missingDotnet ? 1 : 0) | (missingWindows ? 2 : 0);
-                if (!missingDotnet && !missingWindows) break;
-
                 var choice = NativeDialog.Show(Chinese, architecture, missingDotnet, missingWindows);
-                if (choice == 0 || choice == 2) return 0;
                 if (choice == 100)
-                    Open(RuntimeRequirements.DotnetDownload(architecture, Chinese));
-                if (choice == 101)
-                    Open(RuntimeRequirements.WindowsDownload(architecture));
-                // The dialog returns after a download or retry, then probes both dependencies again.
+                {
+                    if (missingDotnet)
+                        Open(RuntimeRequirements.DotnetDownload(architecture, Chinese));
+                    if (missingWindows)
+                        Open(RuntimeRequirements.WindowsDownload(architecture));
+                }
+                return 0;
             }
 
             var start = new ProcessStartInfo(appPath) { UseShellExecute = false, WorkingDirectory = AppContext.BaseDirectory };
