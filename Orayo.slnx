@@ -5,6 +5,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="src/Orayo.Core/Orayo.Core.csproj" />
+  <Project Path="src/Orayo.Launcher/Orayo.Launcher.csproj" />
   <Folder Name="/tests/">
     <Project Path="tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj" />
   </Folder>

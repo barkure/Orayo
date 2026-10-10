@@ -15,6 +15,7 @@
     <ProjectReference Include="../../src/Orayo.Core/Orayo.Core.csproj" />
     <Compile Include="../../src/Orayo/Services/CoreUpdateService.cs" Link="Services/CoreUpdateService.cs" />
     <Compile Include="../../src/Orayo/Services/XrayService.cs" Link="Services/XrayService.cs" />
+    <Compile Include="../../src/Orayo.Launcher/RuntimeRequirements.cs" Link="Launcher/RuntimeRequirements.cs" />
     <None Include="../../src/Orayo/Assets/engine/xray.exe" Link="Assets/engine/xray.exe" CopyToOutputDirectory="PreserveNewest" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
   </ItemGroup>
 </Project>

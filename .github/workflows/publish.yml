@@ -82,28 +82,37 @@ jobs:
       - name: Publish
         shell: pwsh
         run: |
-          dotnet publish src/Orayo/Orayo.csproj `
-            -c $env:CONFIGURATION `
-            -r $env:RUNTIME_ID `
-            --self-contained true `
-            -p:WindowsAppSDKSelfContained=true `
-            -p:PublishSingleFile=false `
-            -p:PublishReadyToRun=true `
-            -p:Version=${{ steps.version.outputs.velopack_version }} `
-            -p:PackageVersion=${{ steps.version.outputs.velopack_version }} `
-            -p:InformationalVersion=${{ steps.version.outputs.velopack_version }} `
-            -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} `
-            -p:FileVersion=${{ steps.version.outputs.assembly_version }} `
-            -o artifacts/publish
+          ./.github/scripts/Publish-App.ps1 `
+            -Configuration $env:CONFIGURATION `
+            -Runtime $env:RUNTIME_ID `
+            -Version '${{ steps.version.outputs.velopack_version }}' `
+            -AssemblyVersion '${{ steps.version.outputs.assembly_version }}'
+
+      - name: Download delta base package
+        id: delta_base
+        shell: pwsh
+        env:
+          VPK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          dotnet tool install -g vpk --version 0.0.1298
+          if ($LASTEXITCODE -ne 0) { throw "Installing vpk failed." }
+
+          vpk download github `
+            --repoUrl "https://github.com/${{ github.repository }}" `
+            --token $env:VPK_TOKEN `
+            --channel win `
+            --outputDir artifacts/velopack
+          if ($LASTEXITCODE -ne 0) { throw "Downloading the delta base failed." }
+
+          $basePackages = @(Get-ChildItem artifacts/velopack/Orayo-*-full.nupkg)
+          if ($basePackages.Count -ne 1) { throw "Expected exactly one previous full package." }
+          "package=$($basePackages[0].FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Create Velopack release
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
           $packVersion = "${{ steps.version.outputs.velopack_version }}"
-          $repoUrl = "https://github.com/${{ github.repository }}"
-
-          dotnet tool install -g vpk --version 0.0.1298
           vpk pack `
             --packId Orayo `
             --packTitle Orayo `
@@ -111,18 +120,49 @@ jobs:
             --packVersion $packVersion `
             --packDir artifacts/publish `
             --mainExe Orayo.exe `
+            --skipVeloAppCheck `
             --runtime $env:RUNTIME_ID `
+            --delta BestSpeed `
             --icon src/Orayo/Assets/icons/AppIcon.ico `
             --outputDir artifacts/velopack
+          if ($LASTEXITCODE -ne 0) { throw "Creating the release failed." }
+
+      - name: Verify delta reconstruction
+        shell: pwsh
+        env:
+          DELTA_BASE_PACKAGE: ${{ steps.delta_base.outputs.package }}
+          PACK_VERSION: ${{ steps.version.outputs.velopack_version }}
+        run: |
+          $full = "artifacts/velopack/Orayo-$env:PACK_VERSION-full.nupkg"
+          $delta = "artifacts/velopack/Orayo-$env:PACK_VERSION-delta.nupkg"
+          if (-not (Test-Path $delta)) { throw "The delta package was not generated." }
+          vpk delta patch `
+            --base $env:DELTA_BASE_PACKAGE `
+            --patch $delta `
+            --output artifacts/reconstructed.nupkg
+          if ($LASTEXITCODE -ne 0) { throw "Reconstructing the delta package failed." }
+          ./.github/scripts/Test-PackageContents.ps1 -Expected $full -Actual artifacts/reconstructed.nupkg
+          $fullSize = (Get-Item $full).Length
+          $deltaSize = (Get-Item $delta).Length
+          "Delta: $deltaSize bytes; full: $fullSize bytes." >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload Velopack release
+        shell: pwsh
+        env:
+          VPK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $repoUrl = "https://github.com/${{ github.repository }}"
 
           vpk upload github `
             --repoUrl $repoUrl `
-            --token "${{ secrets.GITHUB_TOKEN }}" `
+            --token $env:VPK_TOKEN `
             --outputDir artifacts/velopack `
             --publish `
             --merge `
             --releaseName "Orayo $version" `
             --tag $version
+          if ($LASTEXITCODE -ne 0) { throw "Uploading the release failed." }
 
       - name: Rename GitHub release downloads
         uses: actions/github-script@v8

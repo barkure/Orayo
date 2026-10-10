@@ -44,10 +44,18 @@ winget install barkure.Orayo
 
 ## Build Instructions
 
+Framework-dependent packages require .NET 10 Desktop Runtime and Windows App Runtime 2.0. If either is missing, the launcher provides architecture-specific official Microsoft download links. Install the runtimes and select **Check again**.
+
 Requires .NET 10 SDK and Windows 10 1809 or later. Windows 10 2004 or later is recommended.
 
 ```bash
 dotnet build src/Orayo/Orayo.csproj -c Release -r win-x64
+```
+
+Publishing the application with its native launcher also requires Visual Studio C++ build tools:
+
+```powershell
+./.github/scripts/Publish-App.ps1
 ```
 
 ## Open Source Projects Used
