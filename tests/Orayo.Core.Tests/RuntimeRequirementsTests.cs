@@ -26,7 +26,7 @@ public sealed class RuntimeRequirementsTests
     public void Download_links_match_application_architecture(Architecture architecture, string name)
     {
         Assert.Equal(name, RuntimeRequirements.ArchitectureName(architecture));
-        Assert.Equal($"https://dotnet.microsoft.com/zh-cn/download/dotnet/thank-you/runtime-desktop-10.0.12-windows-{name}-installer", RuntimeRequirements.DotnetDownload(name, true));
+        Assert.Equal($"https://aka.ms/dotnet/10.0/windowsdesktop-runtime-win-{name}.exe", RuntimeRequirements.DotnetDownload(name));
         Assert.Equal($"https://aka.ms/windowsappsdk/2.0/2.0.1/windowsappruntimeinstall-{name}.exe", RuntimeRequirements.WindowsDownload(name));
     }
 

@@ -30,8 +30,8 @@ internal static class RuntimeRequirements
             .Any(directory => IsCompatibleDotnetVersion(Path.GetFileName(directory)));
     }
 
-    public static string DotnetDownload(string architecture, bool chinese) =>
-        $"https://dotnet.microsoft.com/{(chinese ? "zh-cn" : "en-us")}/download/dotnet/thank-you/runtime-desktop-{MinimumDotnetVersion}-windows-{architecture}-installer";
+    public static string DotnetDownload(string architecture) =>
+        $"https://aka.ms/dotnet/10.0/windowsdesktop-runtime-win-{architecture}.exe";
 
     public static string WindowsDownload(string architecture) =>
         $"https://aka.ms/windowsappsdk/2.0/{WindowsRuntimeVersion}/windowsappruntimeinstall-{architecture}.exe";

@@ -36,7 +36,7 @@ internal static class Program
                 if (choice == 100)
                 {
                     if (missingDotnet)
-                        Open(RuntimeRequirements.DotnetDownload(architecture, Chinese));
+                        Open(RuntimeRequirements.DotnetDownload(architecture));
                     if (missingWindows)
                         Open(RuntimeRequirements.WindowsDownload(architecture));
                 }
