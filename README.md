@@ -47,7 +47,7 @@ winget install barkure.Orayo
 Requires .NET 10 SDK and Windows 10 1809 or later. Windows 10 2004 or later is recommended.
 
 ```bash
-dotnet build -c Release
+dotnet build src/Orayo/Orayo.csproj -c Release -r win-x64
 ```
 
 ## Open Source Projects Used

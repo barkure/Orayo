@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Orayo</RootNamespace>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Strings/*.resx">
+      <ManifestResourceName>Orayo.Strings.%(Filename)</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

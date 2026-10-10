@@ -69,11 +69,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="Orayo.Core/Orayo.Core.csproj" />
-    <Compile Remove="Orayo.Core/**/*.cs;tests/**/*.cs;Models/**/*.cs;Application/**/*.cs;Infrastructure/Storage/**/*.cs;Strings/**/*.cs" />
-    <Compile Include="Application/AppServices.cs" />
-    <Compile Remove="Services/NodeLinkParser.cs;Services/NodeLinkSerializer.cs;Services/XrayConfigBuilder.cs;Services/DnsPresetService.cs;Services/RouteRulePresetService.cs;Services/EchSettings.cs;Services/FinalmaskJson.cs;Services/ServerLatencyService.cs" />
-    <EmbeddedResource Remove="Strings/**/*.resx;tests/**/*.resx" />
+    <ProjectReference Include="../Orayo.Core/Orayo.Core.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -92,8 +88,3 @@
       SkipUnchangedFiles="true" />
   </Target>
 </Project>
-
-
-
-
-

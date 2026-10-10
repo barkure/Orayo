@@ -34,10 +34,10 @@ jobs:
         shell: pwsh
         run: |
           $requiredFiles = @(
-            "Assets/engine/xray.exe",
-            "Assets/engine/wintun.dll",
-            "Assets/rules/geoip.dat",
-            "Assets/rules/geosite.dat"
+            "src/Orayo/Assets/engine/xray.exe",
+            "src/Orayo/Assets/engine/wintun.dll",
+            "src/Orayo/Assets/rules/geoip.dat",
+            "src/Orayo/Assets/rules/geosite.dat"
           )
 
           foreach ($file in $requiredFiles) {
@@ -50,7 +50,7 @@ jobs:
         run: dotnet test tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj -c Release
 
       - name: Restore
-        run: dotnet restore Orayo.csproj -r $env:RUNTIME_ID
+        run: dotnet restore src/Orayo/Orayo.csproj -r $env:RUNTIME_ID
 
       - name: Build
-        run: dotnet build Orayo.csproj -c Release -r $env:RUNTIME_ID --no-restore -p:WindowsAppSDKSelfContained=true
+        run: dotnet build src/Orayo/Orayo.csproj -c Release -r $env:RUNTIME_ID --no-restore -p:WindowsAppSDKSelfContained=true

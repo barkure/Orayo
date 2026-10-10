@@ -58,7 +58,7 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore
-        run: dotnet restore Orayo.csproj -r $env:RUNTIME_ID
+        run: dotnet restore src/Orayo/Orayo.csproj -r $env:RUNTIME_ID
 
       - name: Test core behavior
         run: dotnet test tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj -c Release
@@ -67,10 +67,10 @@ jobs:
         shell: pwsh
         run: |
           $requiredFiles = @(
-            "Assets/engine/xray.exe",
-            "Assets/engine/wintun.dll",
-            "Assets/rules/geoip.dat",
-            "Assets/rules/geosite.dat"
+            "src/Orayo/Assets/engine/xray.exe",
+            "src/Orayo/Assets/engine/wintun.dll",
+            "src/Orayo/Assets/rules/geoip.dat",
+            "src/Orayo/Assets/rules/geosite.dat"
           )
 
           foreach ($file in $requiredFiles) {
@@ -82,7 +82,7 @@ jobs:
       - name: Publish
         shell: pwsh
         run: |
-          dotnet publish Orayo.csproj `
+          dotnet publish src/Orayo/Orayo.csproj `
             -c $env:CONFIGURATION `
             -r $env:RUNTIME_ID `
             --self-contained true `
@@ -112,7 +112,7 @@ jobs:
             --packDir artifacts/publish `
             --mainExe Orayo.exe `
             --runtime $env:RUNTIME_ID `
-            --icon Assets/icons/AppIcon.ico `
+            --icon src/Orayo/Assets/icons/AppIcon.ico `
             --outputDir artifacts/velopack
 
           vpk upload github `

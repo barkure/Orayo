@@ -1,19 +1,35 @@
 # Architecture
 
-Orayo has a Windows desktop application and a platform-independent `Orayo.Core` library. The core project explicitly links the shared source files so their existing repository paths remain stable. It has no WinUI or Windows App SDK dependency.
+Orayo has a Windows desktop application and a platform-independent `Orayo.Core` library. Each project owns its source files under `src/`; the desktop project references the core library through a project reference. The core library has no WinUI or Windows App SDK dependency.
+
+## Repository layout
+
+```text
+src/
+  Orayo/                 WinUI application, Windows services, bundled assets
+  Orayo.Core/            Models, application logic, storage, protocols, resources
+tests/
+  Orayo.Core.Tests/      Core behavior tests
+docs/                    Architecture and documentation assets
+.github/workflows/       Build and release automation
+Orayo.slnx               Solution entry point
+```
+
+Build the Windows application from the repository root with `dotnet build src/Orayo/Orayo.csproj -c Release -r win-x64`. Runtime assets still deploy to `Assets/` beside the executable; relocating source files does not change configuration or portable data locations. Generated output belongs in ignored `bin/`, `obj/`, and `artifacts/` directories.
 
 ## Responsibilities
 
 | Area | Responsibility |
 | --- | --- |
-| `Models/` | Serializable node configuration, settings, and persisted runtime state. No brushes, visibility values, or active-node display state. |
-| `Application/` | `AppSession` shares settings and state; `ServerCatalog` owns imports and node edits; `IAppStore` defines persistence. |
-| `Infrastructure/Storage/` | `AppPaths` chooses locations; `AppStore` maps documents to files; `JsonFileStore` serializes writes, uses temporary files, and recovers valid backups. |
-| `ViewModels/` | `ServerItemViewModel` wraps a node with active and latency display state. |
-| `Services/` | Share-link parsing, configuration building, DNS/routing presets, runtime process management, TUN IPC, and update operations. |
-| `MainWindow`, `Views/` | Window lifetime, dialogs, clipboard access, UI events, and connection interactions. |
+| `src/Orayo.Core/Models/` | Serializable node configuration, settings, and persisted runtime state. No brushes, visibility values, or active-node display state. |
+| `src/Orayo.Core/Application/` | `AppSession` shares settings and state; `ServerCatalog` owns imports and node edits; `IAppStore` defines persistence. |
+| `src/Orayo.Core/Infrastructure/Storage/` | `AppPaths` chooses locations; `AppStore` maps documents to files; `JsonFileStore` serializes writes, uses temporary files, and recovers valid backups. |
+| `src/Orayo/ViewModels/` | `ServerItemViewModel` wraps a node with active and latency display state. |
+| `src/Orayo.Core/Services/` | Share-link parsing, configuration building, DNS/routing presets, and latency probes. |
+| `src/Orayo/Services/` | Windows integration, runtime process management, TUN IPC, and update operations. |
+| `src/Orayo/MainWindow`, `src/Orayo/Views/` | Window lifetime, dialogs, clipboard access, UI events, and connection interactions. |
 
-`Application/AppServices.cs` is the Windows composition root. It creates one shared session/store and explicitly configures runtime and update services. Windows receive these dependencies rather than creating independent stores. `AppSession.LoadAsync` runs once at startup, then the UI culture is selected and presets are normalized before constructing the windows.
+`src/Orayo/Application/AppServices.cs` is the Windows composition root. It creates one shared session/store and explicitly configures runtime and update services. Windows receive these dependencies rather than creating independent stores. `AppSession.LoadAsync` runs once at startup, then the UI culture is selected and presets are normalized before constructing the windows.
 
 Node mutations are serialized by `ServerCatalog`. A changed list is published only after it has been saved, preventing failed or overlapping writes from publishing unsaved nodes. Persisted node IDs remain stable when editing.
 
@@ -31,6 +47,10 @@ Velopack owns application update packages and their cache lifetime; the Xray upd
 
 ## Validation
 
-Run `dotnet test tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj -c Release` on any supported .NET 10 host. Tests cover portable relocation, installed-path compatibility, corrupt-file recovery, legacy JSON compatibility, overlapping node edits, failed saves, language resources, configuration generation, and portable pending updates.
+Run `dotnet test tests/Orayo.Core.Tests/Orayo.Core.Tests.csproj -c Release` on any supported .NET 10 host. Tests cover portable relocation, installed-path compatibility, corrupt-file recovery, legacy JSON compatibility, overlapping node edits, failed saves, language resources, configuration generation, portable pending updates, and share-link round trips for all five supported protocols. Share-link tests include Unicode names, escaped credentials and paths, IPv6, REALITY fields, and invalid or unsupported links.
 
-The pending-update test compiles the production `CoreUpdateService.cs` directly because the Windows app cannot be referenced from the platform-independent test project. The Windows build workflow runs core tests before compiling the WinUI application. The release workflow also runs the tests before packaging. UI/XAML compilation, TUN authorization, and packaged update behavior require Windows validation.
+The test project compiles the production `src/Orayo/Services/CoreUpdateService.cs` and `src/Orayo/Services/XrayService.cs` directly because the Windows app cannot be referenced from the platform-independent test project. On Windows, it copies the bundled Xray executable and runs lifecycle integration tests against real loopback listeners: start/stop, restart, shutdown, persistent versus ephemeral configuration, and recovery after invalid configuration or missing inbounds. These tests need no administrator privileges or external server; they are explicitly skipped on other operating systems.
+
+The Windows build workflow runs the tests before compiling the WinUI application. The release workflow also runs the tests before packaging. UI/XAML compilation, TUN authorization, and packaged update behavior require separate Windows validation.
+
+The root `.editorconfig` defines indentation, encoding, line endings, and C# formatting. Bundled third-party assets keep their upstream formatting, and generated designer files are identified as generated code. Existing source files are not reformatted as part of directory maintenance.
