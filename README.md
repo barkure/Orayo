@@ -53,7 +53,7 @@ dotnet build src/Orayo/Orayo.csproj -c Release -r win-x64
 Publishing the application with its native launcher also requires Visual Studio C++ build tools:
 
 ```powershell
-./.github/scripts/Publish-App.ps1
+.github/scripts/Publish-App.ps1
 ```
 
 ## Open Source Projects Used

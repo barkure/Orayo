@@ -40,7 +40,7 @@ Orayo 是一款使用 WinUI 3 构建的现代化 Windows Xray 客户端。
 winget install barkure.Orayo
 ```
 
-### 发布页
+### Release
 
 [最新版本](https://github.com/barkure/Orayo/releases/latest)：Setup（需安装）和 Portable（直接运行，无需安装）。
 
@@ -55,7 +55,7 @@ dotnet build src/Orayo/Orayo.csproj -c Release -r win-x64
 发布包含原生启动器的完整应用目录，需要 Visual Studio C++ 构建工具：
 
 ```powershell
-./.github/scripts/Publish-App.ps1
+.github/scripts/Publish-App.ps1
 ```
 
 ## 使用的开源项目
