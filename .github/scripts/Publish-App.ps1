@@ -24,6 +24,21 @@ foreach ($file in @('coreclr.dll', 'hostfxr.dll', 'Microsoft.ui.xaml.dll', 'onnx
     if (Test-Path -LiteralPath (Join-Path $Output $file)) { throw "Unexpected bundled runtime: $file" }
 }
 
+$runtimeConfig = Get-Content -LiteralPath (Join-Path $Output 'Orayo.App.runtimeconfig.json') -Raw | ConvertFrom-Json
+foreach ($name in @('Microsoft.NETCore.App', 'Microsoft.WindowsDesktop.App')) {
+    $framework = @($runtimeConfig.runtimeOptions.frameworks | Where-Object name -eq $name)
+    if ($framework.Count -ne 1 -or $framework[0].version -ne '10.0.12') {
+        throw "The launcher and published runtime requirement differ for $name."
+    }
+}
+
+$versionProbe = Start-Process -FilePath (Join-Path (Resolve-Path $Output).Path 'Orayo.exe') `
+    -ArgumentList '--veloapp-version' -Wait -PassThru -WindowStyle Hidden `
+    -RedirectStandardOutput 'artifacts/launcher-velopack-version.txt'
+if ($versionProbe.ExitCode -ne 0 -or (Get-Content artifacts/launcher-velopack-version.txt -Raw).Trim() -ne '0.0.1298') {
+    throw 'The native launcher did not acknowledge the Velopack version probe.'
+}
+
 # Noninteractive startup probes work even before the shared dependencies are installed.
 $probe = Start-Process -FilePath (Join-Path (Resolve-Path $Output).Path 'Orayo.exe') `
     -ArgumentList '--check-runtime' -Wait -PassThru -WindowStyle Hidden
